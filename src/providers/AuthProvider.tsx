@@ -7,13 +7,15 @@ interface AuthContextProps {
   token: string | null;
   loading: boolean;
   error: string | null;
+  type: string | null;
+  user: any;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { token, loading, error } = useSelector((state: RootState) => state.auth);
+  const { token, loading, error, type, user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
 
   const handleLogout = () => {
@@ -21,7 +23,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ token, loading, error, logout: handleLogout }}>
+    <AuthContext.Provider value={{ token, loading, error, type, user, logout: handleLogout }}>
       {children}
     </AuthContext.Provider>
   );

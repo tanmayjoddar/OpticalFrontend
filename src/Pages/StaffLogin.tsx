@@ -1,33 +1,33 @@
-
-import React from "react";
 import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
-
 import { useDispatch } from 'react-redux';
 import { login } from '@/store/authSlice';
 import type { AppDispatch } from '@/store';
 import { useAuth } from '@/providers/AuthProvider';
-
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router';
 type LoginFormInputs = {
   email: string;
   password: string;
 };
-
-function Login() {
+function StaffLogin() {
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useAuth();
+  const { loading, error, token, type } = useAuth();
+  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormInputs>();
-
   const onSubmit = (data: LoginFormInputs) => {
-    dispatch(login(data));
+    dispatch(login({ ...data, type: 'staff' }));
   };
-
+  useEffect(() => {
+    if (token && type === 'staff') {
+      navigate('/staff-dashboard', { replace: true });
+    }
+  }, [token, type, navigate]);
   return (
     <div
       className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-300 px-4"
@@ -91,5 +91,4 @@ function Login() {
     </div>
   );
 }
-
-export default Login;
+export default StaffLogin;
