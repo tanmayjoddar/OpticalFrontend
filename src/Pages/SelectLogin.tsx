@@ -1,52 +1,150 @@
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { useForm } from "react-hook-form";
 import { useAuth } from "../hooks/useAuth";
+import { login } from "../store/authSlice";
+import type { AppDispatch } from "../store";
+
+// shadcn/ui
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+
+type LoginFormInputs = {
+  email: string;
+  password: string;
+};
+
+type LoginType = "staff" | "shopAdmin" | "retailer" | "admin";
 
 function SelectLogin() {
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const { token, type } = useAuth();
+  const { token, type, loading, error } = useAuth();
+
+  const [selectedType, setSelectedType] = useState<LoginType>("staff");
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormInputs>();
+
+  const onSubmit = (data: LoginFormInputs) => {
+    if (selectedType === "retailer" || selectedType === "admin") return; // disabled
+    dispatch(login({ ...data, type: selectedType }));
+  };
 
   useEffect(() => {
     if (token && type) {
-      if (type === "staff") {
-        navigate("/staff-dashboard", { replace: true });
-      } else if (type === "shopAdmin") {
-        navigate("/shop-admin-dashboard", { replace: true });
-      }
-      // Add more user types here as needed
+      if (type === "staff") navigate("/staff-dashboard", { replace: true });
+      if (type === "shopAdmin") navigate("/shop-admin-dashboard", { replace: true });
     }
   }, [token, type, navigate]);
 
+  const typeLabel = useMemo(() => {
+    switch (selectedType) {
+      case "staff":
+        return "Staff";
+      case "shopAdmin":
+        return "Shop Admin";
+      case "retailer":
+        return "Retailer (Coming Soon)";
+      case "admin":
+        return "Admin (Coming Soon)";
+      default:
+        return "Select Type";
+    }
+  }, [selectedType]);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-300 px-4">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8 space-y-6">
-        <h2 className="text-2xl font-bold text-center mb-6">Select Login Type</h2>
-        <div className="space-y-4">
-          <button
-            className="w-full py-3 px-4 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
-            onClick={() => navigate("/staff-login")}
-          >
-            Staff Login
-          </button>
-          <button
-            className="w-full py-3 px-4 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition"
-            onClick={() => navigate("/shop-admin-login")}
-          >
-            Shop Admin Login
-          </button>
-          <button
-            className="w-full py-3 px-4 rounded-lg bg-yellow-600 text-white font-semibold hover:bg-yellow-700 transition"
-            disabled
-          >
-            Retailer Login (Coming Soon)
-          </button>
-          <button
-            className="w-full py-3 px-4 rounded-lg bg-gray-600 text-white font-semibold hover:bg-gray-700 transition"
-            disabled
-          >
-            Admin Login (Coming Soon)
-          </button>
+    <div
+      className="relative min-h-screen"
+      style={{
+        backgroundImage: `url('/src/assets/gls.png')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+      <div className="absolute inset-0 bg-black/20" />
+      <div className="relative flex min-h-screen items-center justify-center px-4">
+        <form className="w-full max-w-md glass-card rounded-2xl p-6 sm:p-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+        <div className="space-y-2 text-center">
+          <h2 className="text-2xl font-bold text-brand-gradient">Sign in</h2>
+          <p className="text-sm text-muted-foreground">Choose a role and enter your credentials</p>
         </div>
+
+        {/* Type selector */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">Login as</label>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="outline" className="w-full justify-between clay">
+                {typeLabel}
+                <svg xmlns="http://www.w3.org/2000/svg" className="size-4 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-full">
+              <DropdownMenuLabel>Select role</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => setSelectedType("staff")}>Staff</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setSelectedType("shopAdmin")}>Shop Admin</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="opacity-60 pointer-events-none">Retailer (Coming Soon)</DropdownMenuItem>
+              <DropdownMenuItem className="opacity-60 pointer-events-none">Admin (Coming Soon)</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Credentials */}
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium mb-1">Email</label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              autoComplete="email"
+              {...register("email", {
+                required: "Email is required",
+                pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Invalid email address" },
+              })}
+              className={errors.email ? "border-red-500" : ""}
+            />
+            {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
+          </div>
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium mb-1">Password</label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              autoComplete="current-password"
+              {...register("password", {
+                required: "Password is required",
+                minLength: { value: 6, message: "Password must be at least 6 characters" },
+              })}
+              className={errors.password ? "border-red-500" : ""}
+            />
+            {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
+          </div>
+        </div>
+
+        {error && <p className="text-xs text-red-500 text-center">{error}</p>}
+
+          <Button type="submit" className="w-full clay-button" disabled={loading || selectedType === "retailer" || selectedType === "admin"}>
+            {loading ? "Signing in..." : `Sign in as ${typeLabel}`}
+          </Button>
+        </form>
       </div>
     </div>
   );

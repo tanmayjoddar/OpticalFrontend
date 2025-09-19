@@ -14,7 +14,7 @@ export default function Header({ setSidebarOpen }: HeaderProps) {
   const dispatch = useDispatch();
   
   return (
-    <header className="sticky top-0 z-40 border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+  <header className="sticky top-0 z-40 border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50">
       <div className="flex h-16 items-center justify-between px-4 md:px-6">
         {/* Mobile menu button */}
         <div className="flex items-center gap-4">
@@ -29,7 +29,7 @@ export default function Header({ setSidebarOpen }: HeaderProps) {
           </Button>
           
           <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-xl font-bold text-brand-gradient">
               OpticalShop
             </h1>
             <Badge variant="secondary" className="hidden sm:inline-flex">
@@ -41,7 +41,7 @@ export default function Header({ setSidebarOpen }: HeaderProps) {
         {/* Right side items */}
         <div className="flex items-center gap-2 md:gap-4">
           {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative">
+          <Button variant="ghost" size="icon" className="relative hover:text-primary">
             <Bell className="h-5 w-5" />
             <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-xs text-white flex items-center justify-center">
               3
@@ -52,9 +52,9 @@ export default function Header({ setSidebarOpen }: HeaderProps) {
           {/* User menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 md:h-10 md:w-10 rounded-full">
+        <Button variant="ghost" className="relative h-9 w-9 md:h-10 md:w-10 rounded-full hover:text-primary">
                 <Avatar className="h-9 w-9 md:h-10 md:w-10">
-                  <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+          <AvatarFallback className="bg-app-gradient text-white">
                     <User className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>

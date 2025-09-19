@@ -1,19 +1,17 @@
-import StaffLogin from "./Pages/StaffLogin";
+// Combined login is handled in SelectLogin
 import StaffDashboard from "./Pages/StaffDashboard/index";
 import SelectLogin from "./Pages/SelectLogin";
 import { Routes, Route, Navigate } from "react-router";
 import { useAuth } from "./hooks/useAuth";
-import ShopAdminLogin from "./Pages/ShopAdminLogin";
 import ShopAdminDashboard from "./Pages/ShopAdminDashboard/index";
 
 function ProtectedRoute({ children, type }: { children: React.ReactNode; type: string }) {
   const { token, type: userType } = useAuth();
   if (!token || userType !== type) {
     // Redirect to correct login page
-    if (type === 'staff') return <Navigate to="/staff-login" replace />;
-    if (type === 'shopAdmin') return <Navigate to="/shop-admin-login" replace />;
+  // Single entry now: send to root
+  return <Navigate to="/" replace />;
     // Add more types as needed
-    return <Navigate to="/" replace />;
   }
   return <>{children}</>;
 }
@@ -22,7 +20,6 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<SelectLogin />} />
-      <Route path="/staff-login" element={<StaffLogin />} />
       <Route
         path="/staff-dashboard/*"
         element={
@@ -31,7 +28,6 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="/shop-admin-login" element={<ShopAdminLogin />} />
       <Route
         path="/shop-admin-dashboard/*"
         element={

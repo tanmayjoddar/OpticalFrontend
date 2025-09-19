@@ -101,7 +101,7 @@ function SidebarContent() {
   const location = useLocation();
   
   const isActiveLink = (to: string) => {
-    return location.pathname === to;
+    return location.pathname === to || location.pathname.startsWith(to + "/");
   };
 
   const renderNavItem = (item: any) => {
@@ -111,15 +111,16 @@ function SidebarContent() {
     return (
       <Button
         key={item.to}
-        variant={isActive ? "default" : "ghost"}
-        className={`w-full justify-start gap-3 mb-1 h-12 ${
-          isActive 
-            ? "bg-primary text-primary-foreground shadow-sm" 
-            : "hover:bg-accent hover:text-accent-foreground"
+        variant={"ghost"}
+        className={`group w-full justify-start gap-3 mb-2 h-12 rounded-xl pl-2 clay ${
+          isActive
+            ? "ring-1 ring-primary/25"
+            : "hover:ring-1 hover:ring-primary/15"
         }`}
         asChild
       >
-        <Link to={item.to} className="flex items-center gap-3">
+        <Link to={item.to} className="relative flex items-center gap-3 w-full">
+          <span className={`absolute left-0 h-8 w-1 rounded-r bg-primary transition-opacity ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} />
           <Icon className="h-4 w-4 flex-shrink-0" />
           <div className="flex-1 text-left">
             <div className="text-sm font-medium">{item.label}</div>
@@ -139,10 +140,10 @@ function SidebarContent() {
     <div className="flex flex-col h-full">
       <div className="p-6">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
-            <UserCheck className="h-4 w-4 text-white" />
+          <div className="h-8 w-8 rounded-xl clay flex items-center justify-center">
+            <UserCheck className="h-4 w-4 text-primary" />
           </div>
-          <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h2 className="text-lg font-bold text-brand-gradient">
             OpticalShop
           </h2>
         </div>
@@ -179,13 +180,13 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex md:w-80 md:flex-col md:fixed md:inset-y-0 z-50 bg-white border-r">
+  <aside className="hidden md:flex md:w-80 md:flex-col md:fixed md:inset-y-0 z-50 border-r border-sidebar-border bg-sidebar">
         <SidebarContent />
       </aside>
       
       {/* Mobile Sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent side="left" className="p-0 w-80">
+  <SheetContent side="left" className="p-0 w-80 bg-sidebar">
           <SidebarContent />
         </SheetContent>
       </Sheet>

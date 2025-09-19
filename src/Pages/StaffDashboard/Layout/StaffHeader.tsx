@@ -38,7 +38,7 @@ const StaffHeader = ({ onMenuClick }: StaffHeaderProps) => {
   };
 
   return (
-    <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+    <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-sidebar-border bg-white/60 backdrop-blur supports-[backdrop-filter]:bg-white/40 px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
       {/* Mobile menu button */}
       <Button
         variant="ghost"
@@ -56,9 +56,7 @@ const StaffHeader = ({ onMenuClick }: StaffHeaderProps) => {
       <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
         {/* Search bar placeholder - can be enhanced later */}
         <div className="flex flex-1 items-center">
-          <h1 className="text-lg font-semibold text-gray-900">
-            Staff Dashboard
-          </h1>
+          <h1 className="text-lg font-bold text-brand-gradient">Staff Dashboard</h1>
         </div>
 
         <div className="flex items-center gap-x-4 lg:gap-x-6">
@@ -82,9 +80,9 @@ const StaffHeader = ({ onMenuClick }: StaffHeaderProps) => {
           {/* Profile dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+        <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:text-primary">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+          <AvatarFallback className="bg-app-gradient text-white">
                     {user?.name ? getUserInitials(user.name) : 'ST'}
                   </AvatarFallback>
                 </Avatar>

@@ -65,7 +65,7 @@ function MetricCard({
   };
 
   return (
-    <Card className={`hover:shadow-md transition-shadow ${className}`}>
+    <Card className={`hover:shadow-md transition-shadow glass-card ${className}`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
@@ -155,9 +155,9 @@ export default function DashboardOverview() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
+      <h1 className="text-3xl font-bold tracking-tight text-brand-gradient">Dashboard Overview</h1>
           <p className="text-muted-foreground">
             Welcome back! Here's what's happening today.
           </p>
@@ -211,7 +211,7 @@ export default function DashboardOverview() {
       {/* Monthly Metrics & Inventory */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Monthly Performance */}
-        <Card>
+  <Card className="glass-card">
           <CardHeader>
             <CardTitle className="flex items-center">
               <TrendingUp className="h-5 w-5 mr-2" />
@@ -260,7 +260,7 @@ export default function DashboardOverview() {
         </Card>
 
         {/* Inventory Status */}
-        <Card>
+  <Card className="glass-card">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Package className="h-5 w-5 mr-2" />

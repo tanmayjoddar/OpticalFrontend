@@ -105,14 +105,14 @@ const StaffSidebar = ({ mobile = false, open = false, onClose }: StaffSidebarPro
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo/Brand */}
-      <div className="flex items-center px-6 py-4 border-b border-gray-200">
+      <div className="flex items-center px-6 py-4 border-b border-sidebar-border bg-sidebar">
         <div className="flex items-center">
-          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <Activity className="h-5 w-5 text-white" />
+          <div className="w-8 h-8 rounded-xl clay flex items-center justify-center">
+            <Activity className="h-5 w-5 text-primary" />
           </div>
           <div className="ml-3">
-            <h2 className="text-lg font-semibold text-gray-900">OpticStaff</h2>
-            <p className="text-xs text-gray-500">Staff Portal</p>
+            <h2 className="text-lg font-bold text-brand-gradient">OpticStaff</h2>
+            <p className="text-xs text-muted-foreground">Staff Portal</p>
           </div>
         </div>
       </div>
@@ -126,18 +126,15 @@ const StaffSidebar = ({ mobile = false, open = false, onClose }: StaffSidebarPro
                 to={item.href}
                 onClick={mobile ? onClose : undefined}
                 className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors",
+                  "group flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-colors clay",
                   isActive(item.href)
-                    ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    ? "ring-1 ring-primary/25"
+                    : "hover:ring-1 hover:ring-primary/15"
                 )}
               >
-                <item.icon
-                  className={cn(
-                    "mr-3 h-5 w-5 flex-shrink-0",
-                    isActive(item.href) ? "text-blue-600" : "text-gray-400"
-                  )}
-                />
+                <span className={cn("mr-3 h-5 w-5 flex-shrink-0", isActive(item.href) ? "text-primary" : "text-muted-foreground") as any}>
+                  <item.icon className="h-5 w-5" />
+                </span>
                 <span className="flex-1">{item.name}</span>
                 {item.badge && (
                   <Badge variant="secondary" className="ml-2 h-5 text-xs">
@@ -155,10 +152,10 @@ const StaffSidebar = ({ mobile = false, open = false, onClose }: StaffSidebarPro
                       to={subItem.href}
                       onClick={mobile ? onClose : undefined}
                       className={cn(
-                        "flex items-center px-3 py-1.5 text-sm rounded-md transition-colors",
+                        "flex items-center px-3 py-1.5 text-sm rounded-lg transition-colors",
                         location.pathname === subItem.href
-                          ? "bg-blue-100 text-blue-700"
-                          : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                          ? "bg-muted text-foreground"
+                          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                       )}
                     >
                       <subItem.icon className="mr-2 h-4 w-4" />
@@ -175,19 +172,19 @@ const StaffSidebar = ({ mobile = false, open = false, onClose }: StaffSidebarPro
 
         {/* Quick Stats */}
         <div className="px-3">
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Quick Stats</h3>
+          <div className="glass-card rounded-lg p-4">
+            <h3 className="text-sm font-medium mb-2">Quick Stats</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Today's Patients</span>
+                <span className="text-muted-foreground">Today's Patients</span>
                 <span className="font-medium">12</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Pending Orders</span>
+                <span className="text-muted-foreground">Pending Orders</span>
                 <span className="font-medium">5</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Low Stock Items</span>
+                <span className="text-muted-foreground">Low Stock Items</span>
                 <span className="font-medium text-orange-600">3</span>
               </div>
             </div>
@@ -200,7 +197,7 @@ const StaffSidebar = ({ mobile = false, open = false, onClose }: StaffSidebarPro
   if (mobile) {
     return (
       <Sheet open={open} onOpenChange={onClose}>
-        <SheetContent side="left" className="w-64 p-0">
+        <SheetContent side="left" className="w-64 p-0 bg-sidebar">
           <SidebarContent />
         </SheetContent>
       </Sheet>
@@ -208,7 +205,7 @@ const StaffSidebar = ({ mobile = false, open = false, onClose }: StaffSidebarPro
   }
 
   return (
-    <div className="flex flex-col w-64 bg-white border-r border-gray-200">
+    <div className="flex flex-col w-full h-full bg-sidebar border-r border-sidebar-border">
       <SidebarContent />
     </div>
   );

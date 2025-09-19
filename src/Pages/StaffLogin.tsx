@@ -30,13 +30,20 @@ function StaffLogin() {
   }, [token, type, navigate]);
   return (
     <div
-      className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-300 px-4"
+      className="relative min-h-screen"
+      style={{
+        backgroundImage: `url('/src/assets/gls.png')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
     >
+      <div className="absolute inset-0 bg-black/20" />
       <form
-        className="w-full max-w-md bg-white rounded-xl shadow-lg p-8 space-y-6"
+        className="relative w-full max-w-md mx-auto glass-card rounded-2xl p-8 space-y-6 top-1/2 -translate-y-1/2"
         onSubmit={handleSubmit(onSubmit)}
       >
-        <h2 className="text-2xl font-bold text-center mb-2">Sign In</h2>
+        <h2 className="text-2xl font-bold text-center mb-2 text-brand-gradient">Sign In</h2>
         <div className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium mb-1">
@@ -84,7 +91,7 @@ function StaffLogin() {
         {error && (
           <p className="text-xs text-red-500 text-center">{error}</p>
         )}
-        <Button type="submit" className="w-full" disabled={loading}>
+  <Button type="submit" className="w-full clay-button" disabled={loading}>
           {loading ? 'Signing in...' : 'Sign In'}
         </Button>
       </form>
