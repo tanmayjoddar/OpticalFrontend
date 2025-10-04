@@ -6,8 +6,8 @@ import RetailerShops from "./pages/RetailerShops.tsx";
 import RetailerDistributions from "./pages/RetailerDistributions.tsx";
 import RetailerReports from "./pages/RetailerReports.tsx";
 import RetailerProfile from "./pages/RetailerProfile.tsx";
-import { Menu } from "lucide-react";
 import { RetailerAPI } from "@/lib/api";
+import RetailerHeader from './Header';
 
 export default function RetailerDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -49,12 +49,7 @@ export default function RetailerDashboard() {
       </div>
 
       <div className="md:ml-72 min-h-screen flex flex-col">
-        <header className="sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b glass-card">
-          <div className="flex items-center gap-3 px-4 py-3">
-            <button className="md:hidden" onClick={() => setSidebarOpen(true)}><Menu className="w-5 h-5"/></button>
-            <h1 className="text-lg font-semibold text-brand-gradient">Retailer Dashboard</h1>
-          </div>
-        </header>
+        <RetailerHeader setSidebarOpen={setSidebarOpen} />
 
         <main className="p-4 md:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">

@@ -9,6 +9,50 @@ import type {
   PrescriptionsListResponse,
   PrescriptionDetailResponse
 } from './types/doctor';
+// Retailer domain types (endpoints 3-31)
+import type {
+  DashboardOverviewResponse,
+  SalesAnalyticsParams,
+  SalesAnalyticsResponse,
+  InventoryAnalyticsResponse,
+  ShopPerformanceParams,
+  ShopPerformanceResponse,
+  ReportsListResponse,
+  ProfitLossParams,
+  ProfitLossResponse,
+  TaxReportParams,
+  TaxReportResponse,
+  StockValuationResponse,
+  DeleteReportResponse,
+  InventorySummaryResponse,
+  CompaniesResponse,
+  AddCompanyRequest,
+  AddCompanyResponse,
+  ProductsByCompanyResponse,
+  AddProductRequest,
+  AddProductResponse,
+  UpdateProductRequest,
+  UpdateProductResponse,
+  RetailerProductsListResponse,
+  AddRetailerProductRequest,
+  AddRetailerProductResponse,
+  UpdateRetailerProductRequest,
+  UpdateRetailerProductResponse,
+  UpdateStockRequest,
+  UpdateStockResponse,
+  RetailerShopsResponse,
+  AddShopRequest,
+  AddShopResponse,
+  UpdateShopRelationshipRequest,
+  UpdateShopRelationshipResponse,
+  DistributionsListResponse,
+  CreateDistributionRequest,
+  CreateDistributionResponse,
+  ShopDistributionsResponse,
+  DistributionsListParams,
+  ShopDistributionsParams,
+  RetailerShopsParams,
+} from './types/retailer';
 
 // ============================================================================
 // BASE AXIOS CONFIGURATION
@@ -530,42 +574,42 @@ export const RetailerAPI = {
   },
   // Dashboard Analytics
   dashboard: {
-    overview: () => retailerApi.get("/dashboard/overview").then((r) => r.data),
-    salesAnalytics: (params: { period?: string; startDate?: string; endDate?: string } = {}) =>
-      retailerApi.get("/dashboard/sales-analytics", { params }).then((r) => r.data),
-    inventoryAnalytics: () => retailerApi.get("/dashboard/inventory-analytics").then((r) => r.data),
-    shopPerformance: (params: { period?: string; shopId?: number } = {}) =>
-      retailerApi.get("/dashboard/shop-performance", { params }).then((r) => r.data),
+    overview: (): Promise<DashboardOverviewResponse> => retailerApi
+      .get("/dashboard/overview")
+      .then((r) => r.data as DashboardOverviewResponse),
+    salesAnalytics: (params: SalesAnalyticsParams = {}): Promise<SalesAnalyticsResponse> =>
+      retailerApi.get("/dashboard/sales-analytics", { params }).then((r) => r.data as SalesAnalyticsResponse),
+    inventoryAnalytics: (): Promise<InventoryAnalyticsResponse> => retailerApi
+      .get("/dashboard/inventory-analytics")
+      .then((r) => r.data as InventoryAnalyticsResponse),
+    shopPerformance: (params: ShopPerformanceParams = {}): Promise<ShopPerformanceResponse> =>
+      retailerApi.get("/dashboard/shop-performance", { params }).then((r) => r.data as ShopPerformanceResponse),
   },
 
   // Inventory Management
   inventory: {
-    summary: () => retailerApi.get("/inventory/summary").then((r) => r.data),
-    companies: () => retailerApi.get("/inventory/companies").then((r) => r.data),
-    addCompany: (data: { name: string; description?: string }) =>
-      retailerApi.post("/inventory/companies", data).then((r) => r.data),
-    updateCompany: (companyId: number, data: { name?: string; description?: string }) =>
-      retailerApi.put(`/inventory/companies/${companyId}`, data).then((r) => r.data),
+    summary: (): Promise<InventorySummaryResponse> => retailerApi
+      .get("/inventory/summary")
+      .then((r) => r.data as InventorySummaryResponse),
+    companies: (): Promise<CompaniesResponse> => retailerApi
+      .get("/inventory/companies")
+      .then((r) => r.data as CompaniesResponse),
+    addCompany: (data: AddCompanyRequest): Promise<AddCompanyResponse> => retailerApi
+      .post("/inventory/companies", data)
+      .then((r) => r.data as AddCompanyResponse),
+    // NOTE: Update company endpoint not in retailer docs (endpoints 3-31); intentionally omitted to stay in sync.
     productsByCompany: (
       companyId: number,
       params: { eyewearType?: 'GLASSES' | 'SUNGLASSES' | 'LENSES'; page?: number; limit?: number } = {}
-    ) => retailerApi.get(`/inventory/companies/${companyId}/products`, { params }).then((r) => r.data),
-    addProduct: (data: {
-      name: string;
-      description?: string;
-      basePrice: number;
-      barcode?: string;
-      sku?: string;
-      eyewearType: 'GLASSES' | 'SUNGLASSES' | 'LENSES';
-      frameType?: string;
-      companyId: number;
-      material?: string;
-      color?: string;
-      size?: string;
-      model?: string;
-    }) => retailerApi.post("/inventory/products", data).then((r) => r.data),
-    updateProduct: (productId: number, data: Record<string, unknown>) =>
-      retailerApi.put(`/inventory/products/${productId}`, data).then((r) => r.data),
+    ): Promise<ProductsByCompanyResponse> => retailerApi
+      .get(`/inventory/companies/${companyId}/products`, { params })
+      .then((r) => r.data as ProductsByCompanyResponse),
+    addProduct: (data: AddProductRequest): Promise<AddProductResponse> => retailerApi
+      .post("/inventory/products", data)
+      .then((r) => r.data as AddProductResponse),
+    updateProduct: (productId: number, data: UpdateProductRequest): Promise<UpdateProductResponse> => retailerApi
+      .put(`/inventory/products/${productId}`, data)
+      .then((r) => r.data as UpdateProductResponse),
     myProducts: (params: {
       companyId?: number;
       eyewearType?: 'GLASSES' | 'SUNGLASSES' | 'LENSES';
@@ -574,81 +618,75 @@ export const RetailerAPI = {
       search?: string;
       page?: number;
       limit?: number;
-    } = {}) => retailerApi.get("/inventory/my-products", { params }).then((r) => r.data),
-    addRetailerProduct: (data: {
-      productId: number;
-      wholesalePrice: number;
-      mrp: number;
-      minSellingPrice?: number;
-      initialStock?: number;
-      reorderLevel?: number;
-      warehouseLocation?: string;
-      supplier?: string;
-      costPrice?: number;
-    }) => retailerApi.post('/inventory/my-products', data).then((r) => r.data),
-    updateStock: (retailerProductId: number, data: {
-      quantity: number;
-      type: 'ADD' | 'REMOVE';
-      reason?: string;
-      costPrice?: number;
-      supplier?: string;
-      warehouseLocation?: string;
-      batchNumber?: string;
-      expiryDate?: string;
-    }) => retailerApi.put(`/inventory/my-products/${retailerProductId}/stock`, data).then((r) => r.data),
-    updateRetailerProduct: (retailerProductId: number, data: Record<string, unknown>) =>
-      retailerApi.put(`/inventory/my-products/${retailerProductId}`, data).then((r) => r.data),
+    } = {}): Promise<RetailerProductsListResponse> => retailerApi
+      .get("/inventory/my-products", { params })
+      .then((r) => r.data as RetailerProductsListResponse),
+    addRetailerProduct: (data: AddRetailerProductRequest): Promise<AddRetailerProductResponse> => retailerApi
+      .post('/inventory/my-products', data)
+      .then((r) => r.data as AddRetailerProductResponse),
+    updateStock: (retailerProductId: number, data: UpdateStockRequest): Promise<UpdateStockResponse> => retailerApi
+      .put(`/inventory/my-products/${retailerProductId}/stock`, data)
+      .then((r) => r.data as UpdateStockResponse),
+    updateRetailerProduct: (retailerProductId: number, data: UpdateRetailerProductRequest): Promise<UpdateRetailerProductResponse> => retailerApi
+      .put(`/inventory/my-products/${retailerProductId}`, data)
+      .then((r) => r.data as UpdateRetailerProductResponse),
   },
 
   // Shop & Distribution Management
   shops: {
-    getAll: (params: Record<string, unknown> = {}) => retailerApi.get("/shops", { params }).then((r) => r.data),
-    add: (data: { 
-      shopId: number; 
-      partnershipType: 'FRANCHISE' | 'DEALER' | 'DISTRIBUTOR'; 
-      commissionRate?: number; 
-      creditLimit?: number; 
-      paymentTerms?: string 
-    }) => retailerApi.post('/shops', data).then((r) => r.data),
-    updatePartnership: (retailerShopId: number, data: { 
-      commissionRate?: number; 
-      creditLimit?: number; 
-      paymentTerms?: string; 
-      isActive?: boolean 
-    }) => retailerApi.put(`/shops/${retailerShopId}`, data).then((r) => r.data),
+    getAll: (params: RetailerShopsParams = {}): Promise<RetailerShopsResponse> => {
+      // Map deprecated 'active' -> 'isActive' for backward compatibility
+      const finalParams: Record<string, unknown> = { ...params };
+      if ((finalParams as any).active !== undefined && finalParams.isActive === undefined) {
+        finalParams.isActive = (finalParams as any).active;
+        delete (finalParams as any).active;
+      }
+      return retailerApi.get("/shops", { params: finalParams }).then((r) => r.data as RetailerShopsResponse);
+    },
+    add: (data: AddShopRequest): Promise<AddShopResponse> => retailerApi
+      .post('/shops', data)
+      .then((r) => r.data as AddShopResponse),
+    updatePartnership: (retailerShopId: number, data: UpdateShopRelationshipRequest): Promise<UpdateShopRelationshipResponse> => retailerApi
+      .put(`/shops/${retailerShopId}`, data)
+      .then((r) => r.data as UpdateShopRelationshipResponse),
   },
 
   // Distribution Management
   distributions: {
-    getAll: (params: Record<string, unknown> = {}) => retailerApi.get("/distributions", { params }).then((r) => r.data),
-    getByShop: (retailerShopId: number, params: Record<string, unknown> = {}) =>
-      retailerApi.get(`/shops/${retailerShopId}/distributions`, { params }).then((r) => r.data),
-    create: (data: {
-      retailerShopId: number;
-      distributions: { retailerProductId: number; quantity: number; unitPrice: number }[];
-      notes?: string;
-      paymentDueDate?: string;
-    }) => retailerApi.post('/distributions', data).then((r) => r.data),
-    updateDeliveryStatus: (distributionId: number, data: { 
-      deliveryStatus: string; 
-      deliveryDate?: string; 
-      trackingNumber?: string 
-    }) => retailerApi.put(`/distributions/${distributionId}/delivery-status`, data).then((r) => r.data),
-    updatePaymentStatus: (distributionId: number, data: { 
-      paymentStatus: string; 
-      paidDate?: string 
-    }) => retailerApi.put(`/distributions/${distributionId}/payment-status`, data).then((r) => r.data),
+    getAll: (params: DistributionsListParams = {}): Promise<DistributionsListResponse> => {
+      const { retailerShopId, shopId, ...rest } = params;
+      const finalParams: Record<string, unknown> = { ...rest };
+      if (shopId !== undefined) finalParams.shopId = shopId; else if (retailerShopId !== undefined) finalParams.shopId = retailerShopId;
+      return retailerApi
+        .get("/distributions", { params: finalParams })
+        .then((r) => r.data as DistributionsListResponse);
+    },
+    getByShop: (retailerShopId: number, params: ShopDistributionsParams = {}): Promise<ShopDistributionsResponse> => retailerApi
+      .get(`/shops/${retailerShopId}/distributions`, { params })
+      .then((r) => r.data as ShopDistributionsResponse),
+    create: (data: CreateDistributionRequest): Promise<CreateDistributionResponse> => retailerApi
+      .post('/distributions', data)
+      .then((r) => r.data as CreateDistributionResponse),
+    // Delivery/payment status update endpoints are not in the official 31 documented endpoints; removed for spec alignment.
   },
 
   // Reports & Analytics
   reports: {
-    getAll: (params: Record<string, unknown> = {}) => retailerApi.get("/reports", { params }).then((r) => r.data),
-    profitLoss: (params: { startDate: string; endDate: string; format?: 'json' | 'pdf' }) =>
-      retailerApi.get("/reports/profit-loss", { params }).then((r) => r.data),
-    taxReport: (params: { startDate: string; endDate: string; format?: 'json' | 'pdf' }) =>
-      retailerApi.get("/reports/tax-report", { params }).then((r) => r.data),
-    stockValuation: () => retailerApi.get("/reports/stock-valuation").then((r) => r.data),
-    delete: (reportId: number) => retailerApi.delete(`/reports/${reportId}`).then((r) => r.data),
+    getAll: (params: { page?: number; limit?: number } = {}): Promise<ReportsListResponse> => retailerApi
+      .get("/reports", { params })
+      .then((r) => r.data as ReportsListResponse),
+    profitLoss: (params: ProfitLossParams & { format?: 'json' | 'pdf' } = {}): Promise<ProfitLossResponse> => retailerApi
+      .get("/reports/profit-loss", { params })
+      .then((r) => r.data as ProfitLossResponse),
+    taxReport: (params: TaxReportParams & { format?: 'json' | 'pdf' } = {}): Promise<TaxReportResponse> => retailerApi
+      .get("/reports/tax-report", { params })
+      .then((r) => r.data as TaxReportResponse),
+    stockValuation: (): Promise<StockValuationResponse> => retailerApi
+      .get("/reports/stock-valuation")
+      .then((r) => r.data as StockValuationResponse),
+    delete: (reportId: number): Promise<DeleteReportResponse> => retailerApi
+      .delete(`/reports/${reportId}`)
+      .then((r) => r.data as DeleteReportResponse),
   },
 
   // Profile & Authentication
@@ -656,15 +694,12 @@ export const RetailerAPI = {
     get: () => retailerApi.get('/auth/profile').then((r) => r.data),
     update: (data: { 
       name?: string; 
-      companyName?: string; 
       phone?: string; 
       address?: string; 
-      gstNo?: string; 
-      licenseNo?: string 
     }) => retailerApi.put('/auth/profile', data).then((r) => r.data),
     changePassword: (data: { currentPassword: string; newPassword: string }) =>
       retailerApi.put('/auth/change-password', data).then((r) => r.data),
-    refreshToken: () => retailerApi.post('/auth/refresh-token').then((r) => r.data),
+    // refresh-token not part of documented endpoints 3-31; omitted.
   },
 };
 
