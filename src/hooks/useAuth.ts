@@ -1,15 +1,21 @@
 import { useSelector, useDispatch } from 'react-redux';
-import type { RootState } from '../store';
-import { logout } from '../store/authSlice';
+import type { RootState, AppDispatch } from '../store';
+import { logout, logoutWithAttendance } from '../store/authSlice';
 
 export const useAuth = () => {
   const auth = useSelector((state: RootState) => state.auth);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   type BasicUser = { name?: string; email?: string; shopId?: number; shop?: { id?: number } } | null;
   const user = (auth.user as BasicUser) ?? null;
   
   const handleLogout = () => {
-    dispatch(logout());
+    if (auth.type === 'staff') {
+      // For staff users, call attendance logout API first
+      dispatch(logoutWithAttendance());
+    } else {
+      // For other user types, just clear state
+      dispatch(logout());
+    }
   };
   
   return {

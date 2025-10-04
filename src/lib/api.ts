@@ -1,6 +1,6 @@
 import axios, { AxiosHeaders, type AxiosRequestHeaders, type AxiosResponse } from 'axios';
 import { store } from '../store';
-import { logout } from '../store/authSlice';
+import { logout, logoutWithAttendance } from '../store/authSlice';
 
 // ============================================================================
 // BASE AXIOS CONFIGURATION
@@ -120,11 +120,18 @@ apiClient.interceptors.response.use(
       const state = store.getState();
       const userType = state.auth.type;
       
-      store.dispatch(logout());
+      // Use enhanced logout for staff, regular logout for others
+      if (userType === 'staff') {
+        store.dispatch(logoutWithAttendance());
+      } else {
+        store.dispatch(logout());
+      }
       
       // Role-aware redirect
       if (userType === 'shopAdmin') {
         window.location.href = '/shop-admin-login';
+      } else if (userType === 'retailer') {
+        window.location.href = '/retailer-login';
       } else {
         window.location.href = '/staff-login';
       }
@@ -186,6 +193,40 @@ retailerApi.interceptors.response.use(
 // STAFF API ENDPOINTS
 // ============================================================================
 export const StaffAPI = {
+  // Attendance Management
+  attendance: {
+    logout: () => staffApi.post('/api/attendance/logout').then((r) => r.data),
+    getByStaff: (staffId: number) => staffApi.get(`/api/attendance/${staffId}`).then((r) => r.data),
+  },
+
+  // Auth Management
+  auth: {
+    login: (data: { email: string; password: string }) => 
+      staffApi.post('/api/auth/login', data).then((r) => r.data),
+    logout: () => staffApi.post('/api/auth/logout').then((r) => r.data),
+  },
+
+  // Barcode Management
+  barcode: {
+    generateLabel: (data: { 
+      productId?: number; 
+      format?: string; 
+      width?: number; 
+      height?: number; 
+    }) => staffApi.post('/api/barcode/label', data).then((r) => r.data),
+    generate: (productId: number) => 
+      staffApi.post(`/api/barcode/generate/${productId}`).then((r) => r.data),
+    generateSku: (productId: number) => 
+      staffApi.post(`/api/barcode/sku/generate/${productId}`).then((r) => r.data),
+    getMissing: () => staffApi.get('/api/barcode/missing').then((r) => r.data),
+    generateLegacy: (data: { 
+      productId?: number; 
+      format?: string; 
+      width?: number; 
+      height?: number; 
+    }) => staffApi.post('/api/barcode/', data).then((r) => r.data), // Legacy route
+  },
+
   // Patient Management
   patients: {
     getAll: (params: { page?: number; limit?: number; search?: string } = {}) =>
@@ -219,141 +260,127 @@ export const StaffAPI = {
 
   // Customer Management  
   customers: {
-    getAll: () => apiClient.get('/api/customer'),
-    getById: (id: number) => apiClient.get(`/api/customer/${id}`),
+    getAll: (params?: { page?: number; limit?: number; search?: string }) => 
+      staffApi.get('/api/customer', { params }).then((r) => r.data),
+    getById: (id: number) => staffApi.get(`/api/customer/${id}`).then((r) => r.data),
+    getHotspots: () => staffApi.get('/api/customer/hotspots').then((r) => r.data),
     create: (data: {
       name: string;
       phone: string;
       address: string;
-      shopId: number;
-    }) => apiClient.post('/api/customer', data),
+    }) => staffApi.post('/api/customer', data).then((r) => r.data),
     createWithInvoice: (data: {
       customer: {
         name: string;
         phone: string;
         address: string;
-        shopId: number;
       };
       items: Array<{
         productId: number;
         quantity: number;
         unitPrice: number;
       }>;
-      subtotal: number;
-      totalAmount: number;
-      cgst: number;
-      sgst: number;
-    }) => apiClient.post('/api/customer/invoice', data),
+      paidAmount: number;
+      paymentMethod: string;
+    }) => staffApi.post('/api/customer/invoice', data).then((r) => r.data),
   },
 
   // Inventory & Barcode Management
   inventory: {
-    getAll: (params?: {
-      eyewearType?: string;
-      companyId?: number;
-      frameType?: string;
-    }) => apiClient.get('/api/inventory', { params }),
-    getInventory: () => staffApi.get('/').then((r) => r.data),
+    // Current inventory with stock levels
+    getAll: () => staffApi.get('/api/inventory/').then((r) => r.data),
+    
+    // Products management
+    getProducts: (params?: { page?: number; limit?: number; search?: string }) => 
+      staffApi.get('/api/inventory/products', { params }).then((r) => r.data),
+    getProductById: (productId: number) => 
+      staffApi.get(`/api/inventory/product/${productId}`).then((r) => r.data),
+    getProductByBarcode: (barcode: string) => 
+      staffApi.get(`/api/inventory/product/barcode/${encodeURIComponent(barcode)}`).then((r) => r.data),
     addProduct: (data: {
       name: string; 
       description?: string; 
-      barcode?: string; 
-      sku?: string; 
       basePrice: number;
       eyewearType: string; 
-      frameType?: string; 
       companyId: number; 
       material?: string; 
       color?: string; 
       size?: string; 
       model?: string;
-    }) => staffApi.post('/product', data).then((r) => r.data),
-    getProductByBarcode: (barcode: string) => 
-      staffApi.get(`/product/barcode/${encodeURIComponent(barcode)}`).then((r) => r.data),
-    stockByBarcode: (data: { barcode: string; quantity: number; price: number }) =>
-      staffApi.post("/stock-by-barcode", data).then((r) => r.data),
+    }) => staffApi.post('/api/inventory/product', data).then((r) => r.data),
+    updateProduct: (productId: number, data: {
+      name?: string;
+      description?: string;
+      basePrice?: number;
+      eyewearType?: string;
+      companyId?: number;
+      material?: string;
+      color?: string;
+      size?: string;
+      model?: string;
+    }) => staffApi.put(`/api/inventory/product/${productId}`, data).then((r) => r.data),
+    
+    // Stock operations
+    stockByBarcode: (data: { barcode: string; quantity: number; action: string }) =>
+      staffApi.post("/api/inventory/stock-by-barcode", data).then((r) => r.data),
     stockOutByBarcode: (data: { barcode: string; quantity: number }) =>
-      staffApi.post("/stock-out-by-barcode", data).then((r) => r.data),
-    updateStockByBarcode: (data: {
-      barcode: string;
-      quantity: number;
-      price?: number;
-      shopId: number;
-    }) => apiClient.post('/api/inventory/stock-by-barcode', data),
+      staffApi.post("/api/inventory/stock-out-by-barcode", data).then((r) => r.data),
     stockIn: (data: {
-      productId?: number;
-      barcode?: string;
+      productId: number;
       quantity: number;
-    }) => apiClient.post('/api/inventory/stock-in', data),
+      costPrice?: number;
+      sellingPrice?: number;
+    }) => staffApi.post('/api/inventory/stock-in', data).then((r) => r.data),
     stockOut: (data: {
-      productId?: number;
-      barcode?: string;
+      productId: number;
       quantity: number;
-    }) => apiClient.post('/api/inventory/stock-out', data),
-    updateProduct: (
-      productId: number,
-      data: Partial<{
-        name: string;
-        description?: string;
-        barcode?: string;
-        sku?: string;
-        basePrice: number;
-        eyewearType: 'GLASSES' | 'SUNGLASSES' | 'LENSES';
-        frameType?: string;
-        companyId: number;
-        material?: string;
-        color?: string;
-        size?: string;
-        model?: string;
-      }>
-    ) => apiClient.put(`/api/inventory/product/${productId}`, data),
+    }) => staffApi.post('/api/inventory/stock-out', data).then((r) => r.data),
+    
+    // Company management
+    addCompany: (data: { name: string; description?: string }) => 
+      staffApi.post('/api/inventory/company', data).then((r) => r.data),
+    getCompanies: () => staffApi.get('/api/inventory/companies').then((r) => r.data),
+    getCompanyProducts: (companyId: number) => 
+      staffApi.get(`/api/inventory/company/${companyId}/products`).then((r) => r.data),
   },
 
   // Invoice Management
   invoices: {
-    getAll: () => apiClient.get('/api/invoice'),
-    getById: (id: number) => apiClient.get(`/api/invoice/${id}`),
-    getInvoice: (id: number) => staffApi.get(`/invoices/${id}`).then((r) => r.data),
-    create: (data: {
+    getAll: (params?: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      patientId?: number;
       customerId?: number;
-      patientId?: number; 
-      items: Array<{ 
-        productId: number; 
-        quantity: number; 
-        discount?: number; 
-        cgst?: number; 
-        sgst?: number;
-        unitPrice?: number;
-        taxRate?: number;
-      }>; 
-      totalIgst?: number;
-      subtotal?: number;
-      totalAmount?: number;
-      cgst?: number;
-      sgst?: number;
-      notes?: string;
-      shopId?: number;
+      startDate?: string;
+      endDate?: string;
+    }) => staffApi.get('/api/invoice/', { params }).then((r) => r.data),
+    getById: (id: string) => staffApi.get(`/api/invoice/${id}`).then((r) => r.data),
+    create: (data: {
+      patientId?: number;
+      prescriptionId?: number;
+      items: Array<{
+        productId: number;
+        quantity: number;
+        unitPrice: number;
+        discount?: number;
+        cgstRate?: number;
+        sgstRate?: number;
+      }>;
+      paidAmount?: number;
       paymentMethod?: string;
-    }) => {
-      // Try staff API format first, fallback to general API
-      if (data.patientId || (!data.customerId && data.patientId !== undefined)) {
-        return staffApi.post('/invoices', data).then((r) => r.data);
-      }
-      return apiClient.post('/api/invoice', data);
-    },
-    updateStatus: (id: number, status: 'PAID' | 'UNPAID' | 'PARTIALLY_PAID' | string) =>
-      staffApi.patch(`/invoices/${id}/status`, { status }).then((r) => r.data),
-    addPayment: (id: number, data: { 
-      amount: number; 
-      paymentMethod: 'CASH' | 'UPI' | 'CARD' | 'GIFT_CARD' | string; 
-      giftCardCode?: string;
-      reference?: string;
-      date?: string;
       notes?: string;
-    }) => staffApi.post(`/invoices/${id}/payment`, data).then((r) => r.data),
-    cancelInvoice: (id: number) => staffApi.delete(`/invoices/${id}`).then((r) => r.data),
-    delete: (id: number) => apiClient.delete(`/api/invoice/${id}`),
-    getPdf: (id: number) => apiClient.get(`/api/invoice/${id}/pdf`),
+    }) => staffApi.post('/api/invoice/', data).then((r) => r.data),
+    updateStatus: (id: string, data: { status: string; reason?: string }) =>
+      staffApi.patch(`/api/invoice/${id}/status`, data).then((r) => r.data),
+    addPayment: (id: string, data: { 
+      amount: number; 
+      method: string; 
+      notes?: string;
+    }) => staffApi.post(`/api/invoice/${id}/payment`, data).then((r) => r.data),
+    delete: (id: string) => staffApi.delete(`/api/invoice/${id}`).then((r) => r.data),
+    getPdf: (id: string) => staffApi.get(`/api/invoice/${id}/pdf`, { responseType: 'blob' }).then((r) => r.data as Blob),
+    getThermal: (id: string) => staffApi.get(`/api/invoice/${id}/thermal`).then((r) => r.data),
   },
 
   // Prescription Management
@@ -423,9 +450,11 @@ export const StaffAPI = {
 
   // Gift Cards
   giftCards: {
-    issue: (patientId: number, balance: number) => staffApi.post('/api/gift-cards/issue', { patientId, balance }).then((r) => r.data),
-    redeem: (code: string, amount: number) => staffApi.post('/api/gift-cards/redeem', { code, amount }).then((r) => r.data),
-    getBalance: (code: string) => staffApi.get(`/api/gift-cards/${code}`).then((r) => r.data),
+    issue: (data: { patientId: number; balance: number }) => 
+      staffApi.post('/api/gift-card/issue', data).then((r) => r.data),
+    redeem: (data: { code: string; amount: number }) => 
+      staffApi.post('/api/gift-card/redeem', data).then((r) => r.data),
+    getBalance: (code: string) => staffApi.get(`/api/gift-card/${code}`).then((r) => r.data),
   },
 };
 

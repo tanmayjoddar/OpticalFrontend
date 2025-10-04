@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
-import { BASE_URL } from '../lib/api';
+import { BASE_URL, StaffAPI } from '../lib/api';
 
 
 export type AuthType = 'staff' | 'shopAdmin' | 'retailer' | 'admin' | null;
@@ -49,7 +49,7 @@ export const login = createAsyncThunk(
     { rejectWithValue }
   ) => {
     let url = '';
-  if (type === 'staff') url = `${BASE_URL}/api/auth/login/`;
+  if (type === 'staff') url = `${BASE_URL}/api/auth/login`;
   if (type === 'shopAdmin') url = `${BASE_URL}/shop-admin/auth/login`;
   if (type === 'retailer') url = `${BASE_URL}/retailer/auth/login`;
     
@@ -61,14 +61,44 @@ export const login = createAsyncThunk(
       
       // Handle different response structures based on user type
       let user;
-      if (type === 'staff') user = response.data.staff;
-      else if (type === 'shopAdmin') user = response.data.shopAdmin;
-      else if (type === 'retailer') user = response.data.retailer;
+      if (type === 'staff') {
+        // Staff API returns: { token, staffId, name, shopId, shopName }
+        user = {
+          id: response.data.staffId,
+          name: response.data.name,
+          shopId: response.data.shopId,
+          shopName: response.data.shopName
+        };
+      } else if (type === 'shopAdmin') {
+        user = response.data.shopAdmin || response.data;
+      } else if (type === 'retailer') {
+        user = response.data.retailer || response.data;
+      }
       
       return { token: response.data.token, type, user };
     } catch (err) {
       const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Login failed';
       return rejectWithValue(msg);
+    }
+  }
+);
+
+// Enhanced logout action that calls attendance API for staff users
+export const logoutWithAttendance = createAsyncThunk(
+  'auth/logoutWithAttendance',
+  async (_, { getState }) => {
+    const state = getState() as { auth: AuthState };
+    
+    try {
+      // If user is staff, call attendance logout API
+      if (state.auth.type === 'staff' && state.auth.token) {
+        await StaffAPI.attendance.logout();
+      }
+      return true;
+    } catch (err) {
+      // Even if API call fails, continue with logout
+      console.warn('Attendance logout API failed:', err);
+      return true;
     }
   }
 );
@@ -114,9 +144,16 @@ const authSlice = createSlice({
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      .addCase(logoutWithAttendance.fulfilled, (state) => {
+        state.token = null;
+        state.type = null;
+        state.user = null;
+        localStorage.removeItem('jwt');
+        localStorage.removeItem('userData');
       });
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, tokenExp } = authSlice.actions;
 export default authSlice.reducer;

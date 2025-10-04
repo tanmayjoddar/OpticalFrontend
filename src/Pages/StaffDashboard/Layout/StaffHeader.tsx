@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useDispatch } from "react-redux";
 import { Menu, Bell, User, LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +11,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { logout } from "../../../store/authSlice";
 import { useAuth } from "../../../hooks/useAuth";
 
 interface StaffHeaderProps {
@@ -20,12 +18,11 @@ interface StaffHeaderProps {
 }
 
 const StaffHeader = ({ onMenuClick }: StaffHeaderProps) => {
-  const dispatch = useDispatch();
-  const { user } = useAuth() as { user: { name?: string; email?: string } | null };
+  const { user, logout } = useAuth() as { user: { name?: string; email?: string } | null; logout: () => void };
   const [notifications] = useState(0);
 
   const handleLogout = () => {
-    dispatch(logout());
+    logout();
   };
 
   const getUserInitials = (name: string) => {
