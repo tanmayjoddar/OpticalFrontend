@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { useNavigate } from 'react-router';
 import { ChevronLeft, ChevronRight, ArrowUpDown, Filter, Layers, CheckSquare } from 'lucide-react';
+import { formatCurrency } from '@/lib/currency';
 
 interface ProductRow {
   id: number;
@@ -165,7 +166,7 @@ const ProductsList: React.FC = () => {
                     <td className="py-2 pr-4">{p.company?.name}</td>
                     <td className="py-2 pr-4">{p.eyewearType}</td>
                     <td className="py-2 pr-4">{p.barcode}</td>
-                    <td className="py-2 pr-4">{p.basePrice != null ? `₹${p.basePrice.toFixed(2)}` : '—'}</td>
+                    <td className="py-2 pr-4">{p.basePrice != null ? formatCurrency(p.basePrice) : '—'}</td>
                     <td className="py-2 pr-4">
                       <span className={`px-2 py-0.5 rounded text-xs ${p.currentStock == null ? 'bg-gray-200 text-gray-700' : p.currentStock <= 0 ? 'bg-red-600 text-white' : p.currentStock < 5 ? 'bg-orange-500 text-white' : 'bg-green-600 text-white'}`}>{p.currentStock ?? '—'}</span>
                     </td>
@@ -207,7 +208,7 @@ const ProductsList: React.FC = () => {
                   <span className={`px-2 py-0.5 rounded ${p.currentStock == null ? 'bg-gray-200 text-gray-700' : p.currentStock <= 0 ? 'bg-red-600 text-white' : p.currentStock < 5 ? 'bg-orange-500 text-white' : 'bg-green-600 text-white'}`}>{p.currentStock ?? '—'}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <div>{p.basePrice != null ? `₹${p.basePrice.toFixed(2)}` : '—'}</div>
+                  <div>{p.basePrice != null ? formatCurrency(p.basePrice) : '—'}</div>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" disabled>+</Button>
                     <Button size="sm" variant="outline" disabled>-</Button>

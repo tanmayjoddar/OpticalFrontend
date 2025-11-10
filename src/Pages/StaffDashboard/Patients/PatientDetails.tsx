@@ -86,8 +86,9 @@ const PatientDetails = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await api.patients.getById(parseInt(id));
-        setPatient(response.data);
+  const response = await api.patients.getById(parseInt(id));
+  // `api.patients.getById()` returns parsed `.data` already (the patient object).
+  setPatient((response && ((response as any).data || response)) as any);
       } catch (err) {
         const message = (() => {
           if (typeof err === "object" && err && "response" in err) {

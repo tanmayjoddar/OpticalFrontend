@@ -6,7 +6,8 @@ import { useDispatch } from 'react-redux';
 import { logout } from '@/store/authSlice';
 import { useEffect, useState } from 'react';
 import { RetailerAPI } from '@/lib/api';
-import { Menu, Bell, User, LogOut } from 'lucide-react';
+import { Menu, Bell, User, LogOut, Play, Pause, SkipBack, SkipForward } from 'lucide-react';
+import { useSpotify } from '@/components/spotify/SpotifyContext';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -16,6 +17,7 @@ export default function RetailerHeader({ setSidebarOpen }: HeaderProps) {
   const dispatch = useDispatch();
   const { user } = useAuth();
   const [notifCount, setNotifCount] = useState<number>(0);
+  const { isAuthenticated, login, logout: spotifyLogout, token, playerState } = useSpotify();
 
   useEffect(() => {
     let cancelled = false;
@@ -44,7 +46,7 @@ export default function RetailerHeader({ setSidebarOpen }: HeaderProps) {
             <Badge variant="secondary" className="hidden sm:inline-flex">Retailer</Badge>
           </div>
         </div>
-        <div className="flex items-center gap-2 md:gap-4">
+  <div className="flex items-center gap-2 md:gap-4">
           <Button variant="ghost" size="icon" className="relative hover:text-primary">
             <Bell className="h-5 w-5" />
             {notifCount > 0 && (
@@ -54,6 +56,26 @@ export default function RetailerHeader({ setSidebarOpen }: HeaderProps) {
             )}
             <span className="sr-only">View notifications</span>
           </Button>
+          <div className="hidden sm:flex items-center gap-2">
+            {isAuthenticated ? (
+              <>
+                <div className="text-sm mr-3 hidden md:block">
+                  {playerState.track ? (
+                    <span className="max-w-[260px] truncate">{playerState.track.name} — {(playerState.track.artists || []).join(', ')}</span>
+                  ) : <span className="text-muted-foreground">Not playing</span>}
+                </div>
+                <Button variant="ghost" size="icon" onClick={async () => { if (!token?.access_token) return; await fetch('https://api.spotify.com/v1/me/player/previous', { method: 'POST', headers: { Authorization: `Bearer ${token.access_token}` } }); }}><SkipBack className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={async () => { if (!token?.access_token) return; if (playerState.isPlaying) await fetch('https://api.spotify.com/v1/me/player/pause', { method: 'PUT', headers: { Authorization: `Bearer ${token.access_token}` } }); else { await fetch('https://api.spotify.com/v1/me/player/play', { method: 'PUT', headers: { Authorization: `Bearer ${token.access_token}` } }); } }}>
+                  {playerState.isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </Button>
+                <Button variant="ghost" size="icon" onClick={async () => { if (!token?.access_token) return; await fetch('https://api.spotify.com/v1/me/player/next', { method: 'POST', headers: { Authorization: `Bearer ${token.access_token}` } }); }}><SkipForward className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="sm" onClick={() => spotifyLogout()}>Disconnect</Button>
+              </>
+            ) : (
+              <Button size="sm" onClick={() => login()}>Connect Spotify</Button>
+            )}
+          </div>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-9 w-9 md:h-10 md:w-10 rounded-full hover:text-primary">

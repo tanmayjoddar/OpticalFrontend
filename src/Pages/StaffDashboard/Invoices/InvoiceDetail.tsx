@@ -10,6 +10,7 @@ import { Alert } from '@/components/ui/alert';
 import { RefreshCcw, ArrowLeft, Download, Printer, Mail, Eye } from 'lucide-react';
 import InvoicePdfViewer from '@/Pages/StaffDashboard/InvoicePdfViewer';
 import InvoiceThermalPrint from '@/Pages/StaffDashboard/InvoiceThermalPrint';
+import { formatCurrency } from '@/lib/currency';
 
 interface InvoiceItem {
   productId?: number;
@@ -53,7 +54,7 @@ const statusColor: Record<string, string> = {
   cancelled: 'bg-red-600 text-white',
 };
 
-const currency = (n?: number) => n != null ? `₹${n.toFixed(2)}` : '—';
+// use formatCurrency from src/lib/currency for consistent formatting
 
 const InvoiceDetail: React.FC = () => {
   const { id } = useParams();
@@ -74,6 +75,9 @@ const InvoiceDetail: React.FC = () => {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [paymentNotes, setPaymentNotes] = useState('');
+  const [giftCardCode, setGiftCardCode] = useState('');
+  const [giftLookupLoading, setGiftLookupLoading] = useState(false);
+  const [giftData, setGiftData] = useState<{ id?: number; code?: string; balance?: number } | null>(null);
   const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   // Delete state
@@ -236,12 +240,12 @@ const InvoiceDetail: React.FC = () => {
         <Card className="p-4 space-y-2">
           <h2 className="text-sm font-semibold">Amounts</h2>
           <div className="text-xs space-y-1">
-            <div className="flex justify-between"><span>Subtotal</span><span>{currency(computedTotals.sub)}</span></div>
-            <div className="flex justify-between"><span>Discount</span><span>{currency(computedTotals.discount)}</span></div>
-            <div className="flex justify-between"><span>CGST</span><span>{currency(computedTotals.cgst)}</span></div>
-            <div className="flex justify-between"><span>SGST</span><span>{currency(computedTotals.sgst)}</span></div>
+            <div className="flex justify-between"><span>Subtotal</span><span>{formatCurrency(computedTotals.sub)}</span></div>
+            <div className="flex justify-between"><span>Discount</span><span>{formatCurrency(computedTotals.discount)}</span></div>
+            <div className="flex justify-between"><span>CGST</span><span>{formatCurrency(computedTotals.cgst)}</span></div>
+            <div className="flex justify-between"><span>SGST</span><span>{formatCurrency(computedTotals.sgst)}</span></div>
             <Separator className="my-1" />
-            <div className="flex justify-between font-semibold"><span>Grand</span><span>{currency(data?.total ?? computedTotals.grand)}</span></div>
+            <div className="flex justify-between font-semibold"><span>Grand</span><span>{formatCurrency(data?.total ?? computedTotals.grand)}</span></div>
           </div>
         </Card>
         <Card className="p-4 space-y-4">
@@ -251,8 +255,8 @@ const InvoiceDetail: React.FC = () => {
           </div>
           <div className="grid gap-2 text-xs">
             <div className="flex justify-between"><span>Current Status</span><span>{statusBadge(data?.status)}</span></div>
-            <div className="flex justify-between"><span>Paid</span><span>{currency(data?.paidAmount)}</span></div>
-            <div className="flex justify-between"><span>Balance</span><span>{currency(balance)}</span></div>
+            <div className="flex justify-between"><span>Paid</span><span>{formatCurrency(data?.paidAmount)}</span></div>
+            <div className="flex justify-between"><span>Balance</span><span>{formatCurrency(balance)}</span></div>
           </div>
           {/* Status Update Form */}
           <div className="space-y-2 border rounded-md p-3 bg-muted/30">
@@ -325,6 +329,22 @@ const InvoiceDetail: React.FC = () => {
                   onChange={e => setPaymentAmount(e.target.value)}
                   disabled={addingPayment}
                 />
+                <div className="col-span-3 grid grid-cols-3 gap-2">
+                  <div className="col-span-2">
+                    <Input placeholder="Gift Card Code (optional)" value={giftCardCode} onChange={e => setGiftCardCode(e.target.value)} className="text-xs" />
+                  </div>
+                  <div>
+                    <Button size="sm" variant="outline" onClick={async () => {
+                      if (!giftCardCode.trim()) { setGiftData(null); return; }
+                      try { setGiftLookupLoading(true); const res = await StaffAPI.giftCards.getBalance(giftCardCode.trim()); setGiftData(res); } catch { setGiftData(null); } finally { setGiftLookupLoading(false); }
+                    }} disabled={giftLookupLoading}>{giftLookupLoading ? '...' : 'Lookup'}</Button>
+                  </div>
+                </div>
+                {giftData && (
+                  <div className="col-span-5 text-xs text-muted-foreground mt-1">
+                    <div>Found Gift Card: <span className="font-medium">{giftData.code || giftCardCode}</span> — Balance: <span className="font-semibold">{formatCurrency(giftData.balance)}</span></div>
+                  </div>
+                )}
                 <select
                   className="border rounded px-2 py-1 text-xs bg-background col-span-1"
                   value={paymentMethod}
@@ -341,7 +361,7 @@ const InvoiceDetail: React.FC = () => {
                   disabled={addingPayment}
                 />
               </div>
-              <div className="flex gap-2">
+                <div className="flex gap-2">
                 <Button size="sm" variant="outline" disabled={addingPayment || !paymentAmount || parseFloat(paymentAmount||'0') <= 0 || parseFloat(paymentAmount||'0') > balance} onClick={async () => {
                   if (!id) return;
                   const amt = parseFloat(paymentAmount || '0');
@@ -349,9 +369,24 @@ const InvoiceDetail: React.FC = () => {
                   if (amt > balance) { setPaymentError('Amount exceeds balance'); return; }
                   try {
                     setAddingPayment(true); setPaymentError(null); setPaymentMessage(null);
-                    await StaffAPI.invoices.addPayment(String(id), { amount: amt, method: paymentMethod, notes: paymentNotes || undefined });
+                    let remaining = amt;
+                    // If a gift card is selected, attempt to redeem from it first.
+                    if (giftData && giftData.balance && giftData.balance > 0) {
+                      const redeemAmt = Math.min(remaining, Number(giftData.balance || 0));
+                      if (redeemAmt > 0) {
+                        // Redeem on gift card endpoint (reduces balance)
+                        await StaffAPI.giftCards.redeem({ code: giftData.code || giftCardCode.trim(), amount: redeemAmt });
+                        // Post payment linked to gift card
+                        await StaffAPI.invoices.addPayment(String(id), { amount: redeemAmt, method: 'gift', notes: paymentNotes || undefined, giftCardId: giftData.id });
+                        remaining = Math.max(0, remaining - redeemAmt);
+                      }
+                    }
+                    // If any remaining amount, post as the chosen payment method
+                    if (remaining > 0) {
+                      await StaffAPI.invoices.addPayment(String(id), { amount: remaining, method: paymentMethod, notes: paymentNotes || undefined });
+                    }
                     setPaymentMessage('Payment added');
-                    setPaymentAmount(''); setPaymentNotes('');
+                    setPaymentAmount(''); setPaymentNotes(''); setGiftCardCode(''); setGiftData(null);
                     await fetchInvoice();
                     // Auto-mark paid if fully settled
                     const newBal = Math.max(0, (data?.total ?? computedTotals.grand) - ((data?.paidAmount || 0) + amt));
@@ -398,11 +433,11 @@ const InvoiceDetail: React.FC = () => {
                     <TableRow key={idx}>
                       <TableCell className="whitespace-nowrap">{it.product?.name || it.productName || it.productId || '—'}</TableCell>
                       <TableCell className="text-right">{qty}</TableCell>
-                      <TableCell className="text-right">{currency(price)}</TableCell>
-                      <TableCell className="text-right">{disc ? currency(disc) : '—'}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(price)}</TableCell>
+                      <TableCell className="text-right">{disc ? formatCurrency(disc) : '—'}</TableCell>
                       <TableCell className="text-right">{it.cgstRate || 0}</TableCell>
                       <TableCell className="text-right">{it.sgstRate || 0}</TableCell>
-                      <TableCell className="text-right">{currency(total)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(total)}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -425,7 +460,7 @@ const InvoiceDetail: React.FC = () => {
                 {data.payments!.map(p => (
                   <TableRow key={p.id || (p.createdAt + String(p.amount))}>
                     <TableCell>{p.createdAt ? new Date(p.createdAt).toLocaleString() : '—'}</TableCell>
-                    <TableCell>{currency(p.amount)}</TableCell>
+                    <TableCell>{formatCurrency(p.amount)}</TableCell>
                     <TableCell>{methodBadge(p.method)}</TableCell>
                     <TableCell className="max-w-xs truncate" title={p.notes}>{p.notes || '—'}</TableCell>
                   </TableRow>

@@ -477,6 +477,7 @@ export const StaffAPI = {
       amount: number; 
       method: string; 
       notes?: string;
+      giftCardId?: number;
     }) => staffApi.post(`/api/invoice/${id}/payment`, data).then((r) => r.data),
     delete: (id: string) => staffApi.delete(`/api/invoice/${id}`).then((r) => r.data),
     getPdf: (id: string) => staffApi.get(`/api/invoice/${id}/pdf`, { responseType: 'blob' }).then((r) => r.data as Blob),

@@ -25,6 +25,8 @@ const CustomersList = () => {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState(""); // debounced applied value
+  const [idSearch, setIdSearch] = useState<string>('');
+  const [idLookupLoading, setIdLookupLoading] = useState(false);
   const searchRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
 
@@ -92,7 +94,25 @@ const CustomersList = () => {
         <CardContent className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1">
-              <Input ref={searchRef} placeholder="Search name, phone or address" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <div className="flex gap-2">
+                <Input ref={searchRef} placeholder="Search name, phone or address" value={search} onChange={(e) => setSearch(e.target.value)} />
+                <Input placeholder="Search by ID" value={idSearch} onChange={(e) => setIdSearch(e.target.value)} className="w-40" />
+                <Button variant="outline" onClick={async () => {
+                  const v = idSearch.trim();
+                  if (!v) return;
+                  const n = Number(v);
+                  if (!Number.isFinite(n) || n <= 0) { setError('Enter a valid numeric customer ID'); return; }
+                  try {
+                    setIdLookupLoading(true); setError(null);
+                    await StaffAPI.customers.getById(n);
+                    // If found, navigate to the customer detail page
+                    navigate(`/staff-dashboard/customers/${n}`);
+                  } catch (e) {
+                    const msg = e instanceof Error ? e.message : 'Customer not found';
+                    setError(msg);
+                  } finally { setIdLookupLoading(false); }
+                }} disabled={idLookupLoading}>{idLookupLoading ? 'Looking…' : 'Go'}</Button>
+              </div>
             </div>
           </div>
           {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}

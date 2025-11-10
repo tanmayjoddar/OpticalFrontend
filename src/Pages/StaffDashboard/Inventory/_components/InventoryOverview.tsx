@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { RefreshCcw, PackageOpen, TriangleAlert } from 'lucide-react';
+import { formatCurrency } from '@/lib/currency';
 
 interface InventoryItem {
 	productId?: number; id?: number; name?: string; currentStock?: number; basePrice?: number; barcode?: string; company?: { name?: string };
@@ -72,7 +73,7 @@ const InventoryOverview: React.FC = () => {
 			<div className="flex flex-wrap items-center gap-3">
 				<h1 className="text-2xl font-semibold">Inventory Overview</h1>
 				<Button variant="outline" size="sm" onClick={() => setRefreshTick(t => t+1)}><RefreshCcw className="h-4 w-4 mr-1" />Refresh</Button>
-				<div className="text-xs text-muted-foreground">Items: {metrics.totalSkus} • Units: {metrics.totalUnits} • Value: ₹{metrics.inventoryValue.toFixed(2)}</div>
+				<div className="text-xs text-muted-foreground">Items: {metrics.totalSkus} • Units: {metrics.totalUnits} • Value: {formatCurrency(metrics.inventoryValue)}</div>
 			</div>
 
 			{error && <Alert variant="destructive">{error}</Alert>}
@@ -82,7 +83,7 @@ const InventoryOverview: React.FC = () => {
 				<Card className="p-3 flex flex-col gap-1"><span className="text-xs text-muted-foreground">Units in Stock</span><span className="text-lg font-medium">{metrics.totalUnits}</span></Card>
 				<Card className="p-3 flex flex-col gap-1 bg-orange-50 dark:bg-orange-950/30"><span className="text-xs text-orange-600">Low Stock</span><span className="text-lg font-medium">{metrics.lowStock}</span></Card>
 				<Card className="p-3 flex flex-col gap-1 bg-red-50 dark:bg-red-950/30"><span className="text-xs text-red-600">Out of Stock</span><span className="text-lg font-medium">{metrics.outOfStock}</span></Card>
-				<Card className="p-3 flex flex-col gap-1"><span className="text-xs text-muted-foreground">Inventory Value</span><span className="text-lg font-medium">₹{metrics.inventoryValue.toFixed(0)}</span></Card>
+				<Card className="p-3 flex flex-col gap-1"><span className="text-xs text-muted-foreground">Inventory Value</span><span className="text-lg font-medium">{formatCurrency(metrics.inventoryValue, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</span></Card>
 			</div>
 
 			<Card className="p-4 space-y-4">
@@ -121,7 +122,7 @@ const InventoryOverview: React.FC = () => {
 								<div className="text-[10px] text-muted-foreground flex flex-col gap-0.5">
 									{i.barcode && <span>BC: {i.barcode}</span>}
 									{i.company?.name && <span>⛭ {i.company.name}</span>}
-									{i.basePrice != null && <span>₹{i.basePrice}</span>}
+									{i.basePrice != null && <span>{formatCurrency(i.basePrice)}</span>}
 								</div>
 								<div className="flex gap-1 flex-wrap pt-1">
 									<Button size="sm" variant="outline" onClick={() => window.location.href = `/staff-dashboard/inventory/products/${i.id || i.productId}`}>View</Button>
@@ -149,7 +150,7 @@ const InventoryOverview: React.FC = () => {
 									<tr key={i.id || i.productId} className="border-t">
 										<td className="py-1 px-2 text-[11px] max-w-[220px] truncate">{i.name}</td>
 										<td className="py-1 px-2"><span className={`text-[10px] px-1.5 py-0.5 rounded ${statusBadge(i.currentStock)}`}>{i.currentStock ?? '—'}</span></td>
-										<td className="py-1 px-2">{i.basePrice != null ? `₹${i.basePrice}` : '—'}</td>
+										<td className="py-1 px-2">{i.basePrice != null ? formatCurrency(i.basePrice) : '—'}</td>
 										<td className="py-1 px-2 font-mono text-[10px]">{i.barcode || '—'}</td>
 										<td className="py-1 px-2 flex gap-1 flex-wrap">
 											<Button size="sm" variant="outline" onClick={() => window.location.href = `/staff-dashboard/inventory/products/${i.id || i.productId}`}>View</Button>

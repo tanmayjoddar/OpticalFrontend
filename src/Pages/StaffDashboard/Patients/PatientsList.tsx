@@ -59,7 +59,14 @@ const PatientsList = () => {
         setLoading(true);
         setError(null);
         const response = await api.patients.getAll();
-        setPatients(response.data || []);
+        // `api.patients.getAll()` returns the parsed response (.data) already.
+        // Support either an array or a paginated object: { patients: [...] }.
+        if (Array.isArray(response)) {
+          setPatients(response as any[]);
+        } else {
+          const list = (response && ((response as any).patients || (response as any).data)) || [];
+          setPatients(list);
+        }
       } catch (err) {
         const message = (() => {
           if (typeof err === "object" && err && "response" in err) {
@@ -135,9 +142,10 @@ const PatientsList = () => {
                 // Retry fetching patients
                 const fetchPatients = async () => {
                   try {
-                    if (shopId) {
+                      if (shopId) {
                       const response = await api.patients.getAll();
-                      setPatients(response.data || []);
+                      if (Array.isArray(response)) setPatients(response as any[]);
+                      else setPatients((response && ((response as any).patients || (response as any).data)) || []);
                     }
                   } catch (err) {
                     const message = (() => {

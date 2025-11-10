@@ -8,6 +8,7 @@ import { Alert } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { formatCurrency } from '@/lib/currency';
 import { RefreshCcw, Filter, Download, Calendar, ArrowUpDown, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router';
 
@@ -63,15 +64,33 @@ const InvoicesListInner: React.FC = () => {
 			</div>
 			<div className="grid gap-3 grid-cols-2 md:grid-cols-5">
 				<Card className="p-3 space-y-1 text-center"><div className="text-xs text-muted-foreground">Invoices</div><div className="text-lg font-semibold">{analytics.count}</div></Card>
-				<Card className="p-3 space-y-1 text-center"><div className="text-xs text-muted-foreground">Total Amount</div><div className="text-lg font-semibold">₹{analytics.totalAmount.toFixed(2)}</div></Card>
+				<Card className="p-3 space-y-1 text-center"><div className="text-xs text-muted-foreground">Total Amount</div><div className="text-lg font-semibold">{formatCurrency(analytics.totalAmount)}</div></Card>
 				<Card className="p-3 space-y-1 text-center"><div className="text-xs text-muted-foreground">Paid</div><div className="text-lg font-semibold">{analytics.paid}</div></Card>
 				<Card className="p-3 space-y-1 text-center"><div className="text-xs text-muted-foreground">Unpaid/Pending</div><div className="text-lg font-semibold">{analytics.unpaid}</div></Card>
-				<Card className="p-3 space-y-1 text-center"><div className="text-xs text-muted-foreground">Avg Value</div><div className="text-lg font-semibold">₹{analytics.avg.toFixed(2)}</div></Card>
+				<Card className="p-3 space-y-1 text-center"><div className="text-xs text-muted-foreground">Avg Value</div><div className="text-lg font-semibold">{formatCurrency(analytics.avg)}</div></Card>
 			</div>
 			<Card className="p-4 space-y-4">
 				{error && <Alert variant="destructive">{error}</Alert>}
 				<div className="flex flex-wrap gap-3 items-end" aria-label="Invoice Filters">
-					<div className="space-y-1"><label className="text-xs text-muted-foreground" htmlFor="invSearchId">Search (ID)</label><Input id="invSearchId" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Invoice ID" className="w-40" /></div>
+									<div className="space-y-1">
+										<label className="text-xs text-muted-foreground" htmlFor="invSearchId">Search (ID)</label>
+										<div className="flex gap-2">
+											<Input id="invSearchId" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} onKeyDown={async (e) => {
+												if (e.key === 'Enter') {
+													const v = search.trim();
+													if (!v) return;
+													const n = Number(v);
+													if (Number.isFinite(n)) {
+														try { setLoading(true); setError(null); const inv = await StaffAPI.invoices.getById(String(v)); if (inv && inv.id) navigate(`/staff-dashboard/invoices/${inv.id}`); } catch (err: any) { setError(err?.response?.data?.message || 'Invoice not found'); } finally { setLoading(false); }
+													}
+												}
+											}} placeholder="Invoice ID" className="w-40" />
+											<Button size="sm" variant="outline" onClick={async () => {
+												const v = search.trim(); if (!v) return; const n = Number(v); if (!Number.isFinite(n)) { setError('Enter a valid invoice id'); return; }
+												try { setLoading(true); setError(null); const inv = await StaffAPI.invoices.getById(String(v)); if (inv && inv.id) navigate(`/staff-dashboard/invoices/${inv.id}`); } catch (err: any) { setError(err?.response?.data?.message || 'Invoice not found'); } finally { setLoading(false); }
+											}}>Go</Button>
+										</div>
+									</div>
 					<div className="space-y-1"><label className="text-xs text-muted-foreground" htmlFor="invPartySearch">Party Name</label><Input id="invPartySearch" value={partySearch} onChange={(e) => { setPartySearch(e.target.value); setPage(1); }} placeholder="Patient/Customer" className="w-44" /></div>
 					<div className="space-y-1"><label className="text-xs text-muted-foreground">Status</label><select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }} className="border rounded-md h-9 px-2 text-sm bg-background w-40"><option value="">All</option>{STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
 					<div className="space-y-1"><label className="text-xs text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> Start</label><Input type="date" value={startDate} onChange={e => { setStartDate(e.target.value); setPage(1); }} className="w-40" /></div>
@@ -92,8 +111,8 @@ const InvoicesListInner: React.FC = () => {
 										<TableCell>{date}</TableCell>
 										<TableCell className="font-medium">{inv.id}</TableCell>
 										<TableCell>{statusBadge(inv.status)}</TableCell>
-										<TableCell>{inv.total != null ? `₹${inv.total.toFixed(2)}` : inv.paidAmount != null ? `₹${inv.paidAmount.toFixed(2)}` : '—'}</TableCell>
-										<TableCell>{inv.paidAmount != null ? `₹${inv.paidAmount.toFixed(2)}` : '—'}</TableCell>
+										<TableCell>{inv.total != null ? formatCurrency(inv.total) : inv.paidAmount != null ? formatCurrency(inv.paidAmount) : '—'}</TableCell>
+										<TableCell>{inv.paidAmount != null ? formatCurrency(inv.paidAmount) : '—'}</TableCell>
 										<TableCell>{inv.customer?.name || inv.patient?.name || inv.customerId || inv.patientId || '—'}</TableCell>
 										<TableCell><div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => navigate(`/staff-dashboard/invoices/${inv.id}`)}>View</Button><Button size="sm" variant="outline" onClick={async () => { try { const blob = await StaffAPI.invoices.getPdf(String(inv.id)); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `invoice-${inv.id}.pdf`; a.click(); URL.revokeObjectURL(url); } catch(e){ /* silent */ } }}>PDF</Button></div></TableCell>
 									</TableRow>

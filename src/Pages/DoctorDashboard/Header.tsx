@@ -3,7 +3,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useDispatch } from 'react-redux';
 import { logout } from '@/store/authSlice';
-import { Menu, LogOut, User, Stethoscope } from 'lucide-react';
+import { Menu, LogOut, User, Stethoscope, Play, Pause, SkipBack, SkipForward } from 'lucide-react';
+import { useSpotify } from '@/components/spotify/SpotifyContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
 import { DoctorAPI } from '@/lib/api';
@@ -14,6 +15,7 @@ export default function DoctorHeader({ setSidebarOpen }: HeaderProps) {
   const dispatch = useDispatch();
   const { user } = useAuth();
   const [prescriptionCount, setPrescriptionCount] = useState<number>(0);
+  const { isAuthenticated, login, logout: spotifyLogout, token, playerState } = useSpotify();
 
   useEffect(() => {
     let cancelled = false;
@@ -45,7 +47,27 @@ export default function DoctorHeader({ setSidebarOpen }: HeaderProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-2 md:gap-4">
+  <div className="flex items-center gap-1 sm:gap-2 md:gap-4">
+          <div className="hidden sm:flex items-center gap-2">
+            {isAuthenticated ? (
+              <>
+                <div className="text-sm mr-3 hidden md:block">
+                  {playerState.track ? (
+                    <span className="max-w-[260px] truncate">{playerState.track.name} — {(playerState.track.artists || []).join(', ')}</span>
+                  ) : <span className="text-muted-foreground">Not playing</span>}
+                </div>
+                <Button variant="ghost" size="icon" onClick={async () => { if (!token?.access_token) return; await fetch('https://api.spotify.com/v1/me/player/previous', { method: 'POST', headers: { Authorization: `Bearer ${token.access_token}` } }); }}><SkipBack className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={async () => { if (!token?.access_token) return; if (playerState.isPlaying) await fetch('https://api.spotify.com/v1/me/player/pause', { method: 'PUT', headers: { Authorization: `Bearer ${token.access_token}` } }); else { await fetch('https://api.spotify.com/v1/me/player/play', { method: 'PUT', headers: { Authorization: `Bearer ${token.access_token}` } }); } }}>
+                  {playerState.isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </Button>
+                <Button variant="ghost" size="icon" onClick={async () => { if (!token?.access_token) return; await fetch('https://api.spotify.com/v1/me/player/next', { method: 'POST', headers: { Authorization: `Bearer ${token.access_token}` } }); }}><SkipForward className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="sm" onClick={() => spotifyLogout()}>Disconnect</Button>
+              </>
+            ) : (
+              <Button size="sm" onClick={() => login()}>Connect Spotify</Button>
+            )}
+          </div>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-9 w-9 md:h-10 md:w-10 rounded-full hover:text-primary">

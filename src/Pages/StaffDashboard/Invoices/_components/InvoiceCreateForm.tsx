@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { StaffAPI } from '@/lib/api';
+import { formatCurrency } from '@/lib/currency';
 
 // Types for line items in the draft invoice
 interface DraftLineItem {
@@ -35,6 +36,11 @@ const InvoiceCreateForm: React.FC<InvoiceCreateFormProps> = ({ onCreated }) => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<any | null>(null);
+  const [paidAmount, setPaidAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [giftCardCode, setGiftCardCode] = useState('');
+  const [giftLookupLoading, setGiftLookupLoading] = useState(false);
+  const [giftData, setGiftData] = useState<{ id?: number; code?: string; balance?: number } | null>(null);
   const [globalProductSearch, setGlobalProductSearch] = useState('');
   const [productOptions, setProductOptions] = useState<any[]>([]);
   // Removed loadingProducts flag (not used in UI rendering currently)
@@ -105,6 +111,7 @@ const InvoiceCreateForm: React.FC<InvoiceCreateFormProps> = ({ onCreated }) => {
     setNotes('');
     setError(null);
     setSuccess(null);
+    setPaidAmount(''); setPaymentMethod('cash'); setGiftCardCode(''); setGiftData(null);
   };
 
   const submit = async () => {
@@ -124,9 +131,26 @@ const InvoiceCreateForm: React.FC<InvoiceCreateFormProps> = ({ onCreated }) => {
         notes: notes || undefined,
       };
       if (patientId) payload.patientId = Number(patientId);
-      // Paid amount / payment method will be a later enhancement (7.4 maybe). For now treat all as unpaid.
       const created = await StaffAPI.invoices.create(payload);
       setSuccess(created);
+      // If a paid amount was provided, attempt to apply payments now.
+      const amt = parseFloat(paidAmount || '0') || 0;
+      if (amt > 0 && created?.id) {
+        let remaining = amt;
+        // If a gift card was looked up, redeem from it first
+        if (giftData && giftData.balance && giftData.balance > 0) {
+          const redeemAmt = Math.min(remaining, Number(giftData.balance || 0));
+          if (redeemAmt > 0) {
+            await StaffAPI.giftCards.redeem({ code: giftData.code || giftCardCode.trim(), amount: redeemAmt });
+            await StaffAPI.invoices.addPayment(String(created.id), { amount: redeemAmt, method: 'gift', notes: 'Redeemed via gift card', giftCardId: giftData.id });
+            remaining = Math.max(0, remaining - redeemAmt);
+          }
+        }
+        // Any remaining amount is posted using the chosen method
+        if (remaining > 0) {
+          await StaffAPI.invoices.addPayment(String(created.id), { amount: remaining, method: paymentMethod, notes: 'Payment on create' });
+        }
+      }
       onCreated?.(created);
     } catch (e: any) {
       setError(e?.message || 'Failed to create invoice');
@@ -141,6 +165,33 @@ const InvoiceCreateForm: React.FC<InvoiceCreateFormProps> = ({ onCreated }) => {
         <div className="flex flex-col gap-1">
           <h2 className="text-xl font-semibold">New Invoice</h2>
           <p className="text-xs text-muted-foreground">Add products, adjust discounts & taxes, then create the invoice.</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="space-y-1">
+            <label className="text-xs font-medium">Gift Card (optional)</label>
+            <div className="flex gap-2">
+              <Input value={giftCardCode} onChange={e => setGiftCardCode(e.target.value)} placeholder="Code" />
+              <Button variant="outline" onClick={async () => {
+                if (!giftCardCode.trim()) { setGiftData(null); return; }
+                try { setGiftLookupLoading(true); const res = await StaffAPI.giftCards.getBalance(giftCardCode.trim()); setGiftData(res); } catch { setGiftData(null); } finally { setGiftLookupLoading(false); }
+              }} disabled={giftLookupLoading}>{giftLookupLoading ? '...' : 'Lookup'}</Button>
+            </div>
+            {giftData && <div className="text-xs text-muted-foreground">Found: <span className="font-medium">{giftData.code}</span> — Balance: {formatCurrency(giftData.balance)}</div>}
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium">Paid Amount (optional)</label>
+            <Input type="number" min={0} step="0.01" value={paidAmount} onChange={e => setPaidAmount(e.target.value)} placeholder={String(formatCurrency(totals.grand))} />
+            <div className="text-xs text-muted-foreground">Enter amount to take now. Use gift card to cover part by looking up code.</div>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium">Payment Method</label>
+            <select className="border rounded px-2 py-1 text-xs bg-background w-full" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
+              {['cash','card','upi','other'].map(m => <option key={m} value={m}>{m.toUpperCase()}</option>)}
+            </select>
+            <div className="flex gap-2 pt-1">
+              <Button variant="ghost" size="sm" onClick={() => { if (giftData?.balance) setPaidAmount(String(Math.min(Number(giftData.balance || 0), totals.grand))); }}>Apply Max from Gift</Button>
+            </div>
+          </div>
         </div>
         {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
         {success && <Alert><AlertDescription>Invoice created (ID: {success?.id || '—'}). You can create another.</AlertDescription></Alert>}
@@ -210,8 +261,8 @@ const InvoiceCreateForm: React.FC<InvoiceCreateFormProps> = ({ onCreated }) => {
                     </div>
                     <div className="col-span-2 space-y-1 text-right md:text-left">
                       <label className="text-[10px] font-medium uppercase">Line Total</label>
-                      <div className="text-xs font-medium">₹{lineTotal.toFixed(2)}</div>
-                      <div className="text-[10px] text-muted-foreground">Base ₹{lineBase.toFixed(2)}</div>
+                      <div className="text-xs font-medium">{formatCurrency(lineTotal)}</div>
+                      <div className="text-[10px] text-muted-foreground">Base {formatCurrency(lineBase)}</div>
                     </div>
                     <div className="space-y-1 flex md:block justify-end">
                       <Button variant="ghost" size="sm" onClick={() => removeItem(li.id)} disabled={items.length === 1}>Remove</Button>
@@ -226,11 +277,11 @@ const InvoiceCreateForm: React.FC<InvoiceCreateFormProps> = ({ onCreated }) => {
 
         <Separator />
         <div className="grid gap-2 md:grid-cols-5 text-xs">
-          <div className="p-2 bg-muted rounded flex items-center justify-between col-span-2"><span>Subtotal</span><span>₹{totals.sub.toFixed(2)}</span></div>
-          <div className="p-2 bg-muted rounded flex items-center justify-between"><span>Discount</span><span>₹{totals.discountTotal.toFixed(2)}</span></div>
-          <div className="p-2 bg-muted rounded flex items-center justify-between"><span>CGST</span><span>₹{totals.cgst.toFixed(2)}</span></div>
-          <div className="p-2 bg-muted rounded flex items-center justify-between"><span>SGST</span><span>₹{totals.sgst.toFixed(2)}</span></div>
-          <div className="p-2 bg-primary/10 rounded flex items-center justify-between col-span-2 md:col-span-5 font-semibold"><span>Grand Total</span><span>₹{totals.grand.toFixed(2)}</span></div>
+          <div className="p-2 bg-muted rounded flex items-center justify-between col-span-2"><span>Subtotal</span><span>{formatCurrency(totals.sub)}</span></div>
+          <div className="p-2 bg-muted rounded flex items-center justify-between"><span>Discount</span><span>{formatCurrency(totals.discountTotal)}</span></div>
+          <div className="p-2 bg-muted rounded flex items-center justify-between"><span>CGST</span><span>{formatCurrency(totals.cgst)}</span></div>
+          <div className="p-2 bg-muted rounded flex items-center justify-between"><span>SGST</span><span>{formatCurrency(totals.sgst)}</span></div>
+          <div className="p-2 bg-primary/10 rounded flex items-center justify-between col-span-2 md:col-span-5 font-semibold"><span>Grand Total</span><span>{formatCurrency(totals.grand)}</span></div>
         </div>
 
         <div className="flex gap-2 justify-end pt-2 flex-wrap">

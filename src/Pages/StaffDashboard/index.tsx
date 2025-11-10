@@ -31,6 +31,7 @@ import MyAttendance from "./Attendance/MyAttendance";
 import GiftCardIssue from "./GiftCards/GiftCardIssue";
 import GiftCardRedeem from "./GiftCards/GiftCardRedeem";
 import GiftCardBalance from "./GiftCards/GiftCardBalance";
+import GiftCards from "./GiftCards/GiftCards";
 import ProductsList from "./Inventory/ProductsList"; // added
 import InventoryOverviewPage from "./Inventory/InventoryOverview"; // new overview page
 import ProductEdit from "./Inventory/ProductEdit"; // added
@@ -103,6 +104,7 @@ const StaffDashboard = () => {
         <Route path="reports" element={<Reports />} />
 
         {/* Gift Cards */}
+  <Route path="gift-cards" element={<GiftCards />} />
         <Route path="gift-cards/issue" element={<GiftCardIssue />} />
         <Route path="gift-cards/redeem" element={<GiftCardRedeem />} />
         <Route path="gift-cards/balance" element={<GiftCardBalance />} />
