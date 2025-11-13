@@ -8,6 +8,7 @@ import { Alert } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import BarcodeScanner from 'react-qr-barcode-scanner';
 
 interface ProductData {
   id: number;
@@ -35,8 +36,6 @@ interface LookupHistoryItem {
 
 const DEBOUNCE_MS = 400;
 
-const placeholderScanHelp = `Camera scanning placeholder:\n- A future implementation will mount a barcode scanner component here.\n- On successful detection it will populate the barcode input automatically.\n- Consider libs: quagga, @zxing/browser, dynamsoft-javascript-barcode.`; 
-
 export const ProductBarcodeLookup: React.FC = () => {
   const [barcode, setBarcode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -44,6 +43,8 @@ export const ProductBarcodeLookup: React.FC = () => {
   const [product, setProduct] = useState<ProductData | null>(null);
   const [history, setHistory] = useState<LookupHistoryItem[]>([]);
   const [batch, setBatch] = useState<string[]>([]); // future batch list
+  const [isScannerActive, setIsScannerActive] = useState(false);
+  const [scannerError, setScannerError] = useState<string | null>(null);
   const timerRef = useRef<number | null>(null);
 
   const performLookup = useCallback(async (code: string) => {
@@ -81,6 +82,25 @@ export const ProductBarcodeLookup: React.FC = () => {
   const addToBatch = () => {
     if (!barcode) return;
     setBatch(b => b.includes(barcode) ? b : [barcode, ...b]);
+  };
+
+  const handleBarcodeDetected = (err: any, result?: any) => {
+    if (result) {
+      const detectedCode = result.getText();
+      setBarcode(detectedCode);
+      setScannerError(null);
+      // Automatically switch to result tab
+      const resultTab = document.querySelector('[value="result"]') as HTMLElement;
+      if (resultTab) resultTab.click();
+    }
+    if (err && err.name !== 'NotFoundException') {
+      setScannerError(err.message || 'Scanner error occurred');
+    }
+  };
+
+  const toggleScanner = () => {
+    setIsScannerActive(prev => !prev);
+    setScannerError(null);
   };
 
   return (
@@ -198,9 +218,46 @@ export const ProductBarcodeLookup: React.FC = () => {
         </TabsContent>
         <TabsContent value="scanner">
           <Card className="p-4 space-y-3">
-            <p className="text-sm whitespace-pre-line text-muted-foreground">{placeholderScanHelp}</p>
-            <div className="aspect-video w-full bg-muted rounded flex items-center justify-center text-xs text-muted-foreground">Camera Feed (Future)</div>
-            <Button size="sm" variant="secondary" onClick={() => {/* future start camera */}}>Start Scanner (Future)</Button>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {isScannerActive 
+                  ? 'Point your camera at a barcode. The scanner will automatically detect and populate the barcode field.' 
+                  : 'Click "Start Scanner" to activate the camera and scan barcodes.'}
+              </p>
+              
+              {scannerError && (
+                <Alert variant="destructive">{scannerError}</Alert>
+              )}
+              
+              {isScannerActive ? (
+                <div className="w-full bg-black rounded overflow-hidden">
+                  <BarcodeScanner
+                    width="100%"
+                    height={400}
+                    onUpdate={handleBarcodeDetected}
+                  />
+                </div>
+              ) : (
+                <div className="aspect-video w-full bg-muted rounded flex items-center justify-center text-xs text-muted-foreground">
+                  Camera Off - Click Start Scanner to activate
+                </div>
+              )}
+              
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant={isScannerActive ? "destructive" : "default"}
+                  onClick={toggleScanner}
+                >
+                  {isScannerActive ? 'Stop Scanner' : 'Start Scanner'}
+                </Button>
+                {isScannerActive && barcode && (
+                  <Button size="sm" variant="outline" onClick={() => setIsScannerActive(false)}>
+                    Use This Barcode
+                  </Button>
+                )}
+              </div>
+            </div>
           </Card>
         </TabsContent>
       </Tabs>
