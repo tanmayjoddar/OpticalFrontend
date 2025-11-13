@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,11 +13,11 @@ interface DraftLineItem {
   id: string; // client-only id
   productId?: number;
   productName?: string;
+  productPrice?: number; // for display only, fetched from product
   quantity: number;
-  unitPrice: string; // keep as string for controlled input
-  discount?: string; // percent or absolute in future (currently absolute ₹)
-  cgstRate?: string; // percent
-  sgstRate?: string; // percent
+  discount?: string; // absolute amount in ₹
+  cgst?: string; // absolute amount in ₹
+  sgst?: string; // absolute amount in ₹
   loadingProduct?: boolean;
 }
 
@@ -25,12 +26,13 @@ interface InvoiceCreateFormProps {
 }
 
 const InvoiceCreateForm: React.FC<InvoiceCreateFormProps> = ({ onCreated }) => {
+  const navigate = useNavigate();
   // Party selection (either patient or customer for now we support patientId only per API definition)
   const [patientId, setPatientId] = useState('');
   const [notes, setNotes] = useState('');
 
   const [items, setItems] = useState<DraftLineItem[]>([
-    { id: 'li-1', quantity: 1, unitPrice: '', discount: '', cgstRate: '', sgstRate: '' },
+    { id: 'li-1', quantity: 1, discount: '', cgst: '', sgst: '' },
   ]);
 
   const [submitting, setSubmitting] = useState(false);
@@ -66,7 +68,21 @@ const InvoiceCreateForm: React.FC<InvoiceCreateFormProps> = ({ onCreated }) => {
   }, [productOptions, globalProductSearch]);
 
   const updateItem = (id: string, patch: Partial<DraftLineItem>) => {
-    setItems(list => list.map(l => l.id === id ? { ...l, ...patch } : l));
+    setItems(list => list.map(l => {
+      if (l.id === id) {
+        const updated = { ...l, ...patch };
+        // If productId changed, fetch product details to get price
+        if (patch.productId !== undefined && patch.productId !== l.productId) {
+          const product = productOptions.find(p => p.id === patch.productId);
+          if (product) {
+            updated.productPrice = product.basePrice || 0;
+            updated.productName = product.name;
+          }
+        }
+        return updated;
+      }
+      return l;
+    }));
   };
   const removeItem = (id: string) => {
     setItems(list => list.length === 1 ? list : list.filter(l => l.id !== id));
@@ -288,9 +304,9 @@ const InvoiceCreateForm: React.FC<InvoiceCreateFormProps> = ({ onCreated }) => {
           {!success && <Button onClick={submit} disabled={!valid || submitting}>{submitting ? 'Creating...' : 'Create Invoice'}</Button>}
           {success && (
             <>
-              <Button variant="outline" onClick={() => window.location.href = `/staff-dashboard/invoices/${success.id}`}>View (Coming Soon)</Button>
+              <Button variant="outline" onClick={() => navigate(`/staff-dashboard/invoices/${success.id}`)}>View Invoice</Button>
               <Button variant="outline" onClick={() => resetForm()}>Create Another</Button>
-              <Button onClick={() => window.location.href = '/staff-dashboard/invoices'}>Back to List</Button>
+              <Button onClick={() => navigate('/staff-dashboard/invoices')}>Back to List</Button>
             </>
           )}
         </div>

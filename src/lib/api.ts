@@ -391,7 +391,14 @@ export const StaffAPI = {
     getAll: () => staffApi.get('/api/inventory/').then((r) => r.data),
     
     // Products management
-    getProducts: (params?: { page?: number; limit?: number; search?: string }) => 
+    getProducts: (params?: { 
+      page?: number; 
+      limit?: number; 
+      search?: string;
+      eyewearType?: string;
+      companyId?: number;
+      frameType?: string;
+    }) => 
       staffApi.get('/api/inventory/products', { params }).then((r) => r.data),
     getProductById: (productId: number) => 
       staffApi.get(`/api/inventory/product/${productId}`).then((r) => r.data),
@@ -402,7 +409,10 @@ export const StaffAPI = {
       description?: string; 
       basePrice: number;
       eyewearType: string; 
-      companyId: number; 
+      companyId: number;
+      barcode?: string;
+      sku?: string;
+      frameType?: string;
       material?: string; 
       color?: string; 
       size?: string; 
@@ -414,6 +424,9 @@ export const StaffAPI = {
       basePrice?: number;
       eyewearType?: string;
       companyId?: number;
+      barcode?: string;
+      sku?: string;
+      frameType?: string;
       material?: string;
       color?: string;
       size?: string;
@@ -426,13 +439,15 @@ export const StaffAPI = {
     stockOutByBarcode: (data: { barcode: string; quantity: number }) =>
       staffApi.post("/api/inventory/stock-out-by-barcode", data).then((r) => r.data),
     stockIn: (data: {
-      productId: number;
+      productId?: number;
+      barcode?: string;
       quantity: number;
       costPrice?: number;
       sellingPrice?: number;
     }) => staffApi.post('/api/inventory/stock-in', data).then((r) => r.data),
     stockOut: (data: {
-      productId: number;
+      productId?: number;
+      barcode?: string;
       quantity: number;
     }) => staffApi.post('/api/inventory/stock-out', data).then((r) => r.data),
     
@@ -440,11 +455,23 @@ export const StaffAPI = {
     addCompany: (data: { name: string; description?: string }) => 
       staffApi.post('/api/inventory/company', data).then((r) => r.data),
     getCompanies: () => staffApi.get('/api/inventory/companies').then((r) => r.data),
-    getCompanyProducts: (companyId: number) => 
-      staffApi.get(`/api/inventory/company/${companyId}/products`).then((r) => r.data),
+    getCompanyProducts: (companyId: number, params?: {
+      eyewearType?: string;
+      frameType?: string;
+    }) => 
+      staffApi.get(`/api/inventory/company/${companyId}/products`, { params }).then((r) => r.data),
   },
 
   // Invoice Management
+  payment: {
+    processPayment: (data: {
+      invoiceId: number | string;
+      amount: number;
+      paymentMethod: string;
+      giftCardCode?: string;
+    }) => staffApi.post('/api/payment', data).then((r) => r.data),
+  },
+
   invoices: {
     getAll: (params?: {
       page?: number;
@@ -458,14 +485,14 @@ export const StaffAPI = {
     getById: (id: string) => staffApi.get(`/api/invoice/${id}`).then((r) => r.data),
     create: (data: {
       patientId?: number;
+      customerId?: number;
       prescriptionId?: number;
       items: Array<{
         productId: number;
         quantity: number;
-        unitPrice: number;
-        discount?: number;
-        cgstRate?: number;
-        sgstRate?: number;
+        discount?: number;  // absolute amount
+        cgst?: number;      // absolute amount
+        sgst?: number;      // absolute amount
       }>;
       paidAmount?: number;
       paymentMethod?: string;
@@ -481,16 +508,17 @@ export const StaffAPI = {
     }) => staffApi.post(`/api/invoice/${id}/payment`, data).then((r) => r.data),
     delete: (id: string) => staffApi.delete(`/api/invoice/${id}`).then((r) => r.data),
     getPdf: (id: string) => staffApi.get(`/api/invoice/${id}/pdf`, { responseType: 'blob' }).then((r) => r.data as Blob),
-    getThermal: (id: string) => staffApi.get(`/api/invoice/${id}/thermal`).then((r) => r.data),
+    getThermal: (id: string) => staffApi.get(`/api/invoice/${id}/thermal`, { responseType: 'text' }).then((r) => r.data as string),
   },
 
   // Prescription Management
   prescriptions: {
-    getAll: () => apiClient.get('/api/prescription'),
-    getById: (id: number) => apiClient.get(`/api/prescription/${id}`),
-    listPrescriptions: (params: { page?: number; limit?: number; patientId?: number } = {}) =>
+    // List prescriptions with pagination and filtering
+    getAll: (params: { page?: number; limit?: number; patientId?: number } = {}) =>
       staffApi.get('/api/prescription', { params }).then((r) => r.data),
-    getPrescription: (id: number) => staffApi.get(`/api/prescription/${id}`).then((r) => r.data),
+    // Get single prescription by ID
+    getById: (id: number) => staffApi.get(`/api/prescription/${id}`).then((r) => r.data),
+    // Create new prescription
     create: (data: {
       patientId: number;
       rightEye?: { sph?: string; cyl?: string; axis?: string; add?: string };
@@ -508,16 +536,11 @@ export const StaffAPI = {
       shopId?: number;
       doctor?: string;
       date?: string;
-    }) => {
-      // Support both formats - staff API and general API
-      if (data.rightEye || data.leftEye) {
-        return staffApi.post('/api/prescription', data).then((r) => r.data);
-      }
-      return apiClient.post('/api/prescription', data);
-    },
+    }) => staffApi.post('/api/prescription', data).then((r) => r.data),
+    // Download prescription as PDF
     getPdf: (id: number) => staffApi.get(`/api/prescription/${id}/pdf`, { responseType: 'blob' }).then((r) => r.data as Blob),
-    getPrescriptionThermal: (id: number) => staffApi.get(`/api/prescription/${id}/thermal`, { responseType: 'text' }).then((r) => r.data as string),
-    getThermal: (id: number) => apiClient.get(`/api/prescription/${id}/thermal`),
+    // Get thermal print HTML
+    getThermal: (id: number) => staffApi.get(`/api/prescription/${id}/thermal`, { responseType: 'text' }).then((r) => r.data as string),
   },
 
   // Reports

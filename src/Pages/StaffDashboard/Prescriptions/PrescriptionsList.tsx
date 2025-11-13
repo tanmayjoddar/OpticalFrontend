@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus } from "lucide-react";
-import { Link } from "react-router";
+import { Plus, Eye } from "lucide-react";
+import { Link, useNavigate } from "react-router";
 import { StaffAPI } from "@/lib/api";
 
 const PrescriptionsList = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   interface PrescriptionRow { id: number; patientId?: number; patient?: { name?: string } | null; createdAt: string }
@@ -18,7 +19,7 @@ const PrescriptionsList = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-  const res = await StaffAPI.prescriptions.listPrescriptions({ page: 1, limit: 10, patientId: patientId ? Number(patientId) : undefined });
+  const res = await StaffAPI.prescriptions.getAll({ page: 1, limit: 10, patientId: patientId ? Number(patientId) : undefined });
       setList((res as { prescriptions: PrescriptionRow[]; total?: number; page?: number }) || { prescriptions: [] });
     } catch (e) {
       const message = typeof e === "object" && e && "message" in e ? String((e as { message?: unknown }).message) : undefined;
@@ -65,14 +66,25 @@ const PrescriptionsList = () => {
                     <th className="py-2 pr-4">ID</th>
                     <th className="py-2 pr-4">Patient</th>
                     <th className="py-2 pr-4">Created</th>
+                    <th className="py-2 pr-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(list.prescriptions ?? []).map((p: PrescriptionRow) => (
-                    <tr key={p.id} className="border-t">
+                    <tr key={p.id} className="border-t hover:bg-muted/50">
                       <td className="py-2 pr-4">{p.id}</td>
                       <td className="py-2 pr-4">{p.patient?.name || p.patientId}</td>
                       <td className="py-2 pr-4">{new Date(p.createdAt).toLocaleString()}</td>
+                      <td className="py-2 pr-4">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate(`/staff-dashboard/prescriptions/${p.id}`)}
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          View
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

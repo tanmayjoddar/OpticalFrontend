@@ -58,6 +58,7 @@ const InvoicesListInner: React.FC = () => {
 				<div><h1 className="text-2xl font-bold">Invoices</h1><p className="text-sm text-muted-foreground">Browse and manage invoices with filters & analytics</p></div>
 				<div className="flex gap-2 flex-wrap items-center">
 					<Button size="sm" onClick={() => navigate('/staff-dashboard/invoices/create')}><Plus className="h-4 w-4 mr-1" /> New Invoice</Button>
+					<Button size="sm" variant="secondary" onClick={() => navigate('/staff-dashboard/invoices/payment')}>Process Payment</Button>
 					<Button size="sm" variant="outline" onClick={() => fetchInvoices()} disabled={loading}><RefreshCcw className="h-4 w-4 mr-1" />Refresh</Button>
 					<Button size="sm" variant="outline" onClick={exportCSV} disabled={filtered.length===0}><Download className="h-4 w-4 mr-1" />Export</Button>
 				</div>

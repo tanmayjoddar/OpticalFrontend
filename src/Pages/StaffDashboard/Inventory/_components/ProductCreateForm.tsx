@@ -6,8 +6,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { StaffAPI } from '@/lib/api';
 
-interface ProductFormState { name: string; description: string; basePrice: string; eyewearType: string; companyId: string; material: string; color: string; size: string; model: string; barcode: string; sku: string; }
-const initialState: ProductFormState = { name: '', description: '', basePrice: '', eyewearType: 'SUNGLASSES', companyId: '1', material: '', color: '', size: '', model: '', barcode: '', sku: '' };
+interface ProductFormState { name: string; description: string; basePrice: string; eyewearType: string; companyId: string; material: string; color: string; size: string; model: string; barcode: string; sku: string; frameType: string; }
+const initialState: ProductFormState = { name: '', description: '', basePrice: '', eyewearType: 'SUNGLASSES', companyId: '1', material: '', color: '', size: '', model: '', barcode: '', sku: '', frameType: 'FULL_RIM' };
 interface Props { onCreated?: (product: any) => void; }
 
 const ProductCreateForm: React.FC<Props> = ({ onCreated }) => {
@@ -33,7 +33,7 @@ const ProductCreateForm: React.FC<Props> = ({ onCreated }) => {
 		try {
 			setSubmitting(true); setServerError(null);
 			const payload: Parameters<typeof StaffAPI.inventory.addProduct>[0] = {
-				name: form.name.trim(), description: form.description.trim() || undefined, basePrice: Number(form.basePrice), eyewearType: form.eyewearType, companyId: Number(form.companyId), material: form.material || undefined, color: form.color || undefined, size: form.size || undefined, model: form.model || undefined,
+				name: form.name.trim(), description: form.description.trim() || undefined, basePrice: Number(form.basePrice), eyewearType: form.eyewearType, companyId: Number(form.companyId), material: form.material || undefined, color: form.color || undefined, size: form.size || undefined, model: form.model || undefined, barcode: form.barcode || undefined, sku: form.sku || undefined, frameType: form.frameType || undefined,
 			};
 			const product = await StaffAPI.inventory.addProduct(payload);
 			setCreated(product); onCreated?.(product);
@@ -55,6 +55,7 @@ const ProductCreateForm: React.FC<Props> = ({ onCreated }) => {
 						<div className="space-y-1"><label className="text-xs font-medium">Base Price</label><Input type="number" value={form.basePrice} onChange={e => setForm({...form,basePrice:e.target.value})} />{errors.basePrice && <p className="text-xs text-red-500">{errors.basePrice}</p>}</div>
 						<div className="space-y-1"><label className="text-xs font-medium">Company ID</label><Input type="number" value={form.companyId} onChange={e => setForm({...form,companyId:e.target.value})} />{errors.companyId && <p className="text-xs text-red-500">{errors.companyId}</p>}</div>
 						<div className="space-y-1"><label className="text-xs font-medium">Eyewear Type</label><select className="border rounded-md p-2 w-full" value={form.eyewearType} onChange={e => setForm({...form,eyewearType:e.target.value})}><option value="GLASSES">GLASSES</option><option value="SUNGLASSES">SUNGLASSES</option><option value="LENSES">LENSES</option></select>{errors.eyewearType && <p className="text-xs text-red-500">{errors.eyewearType}</p>}</div>
+						<div className="space-y-1"><label className="text-xs font-medium">Frame Type</label><select className="border rounded-md p-2 w-full" value={form.frameType} onChange={e => setForm({...form,frameType:e.target.value})}><option value="FULL_RIM">FULL_RIM</option><option value="HALF_RIM">HALF_RIM</option><option value="RIMLESS">RIMLESS</option></select></div>
 						<div className="space-y-1 sm:col-span-2"><label className="text-xs font-medium">Description</label><Input value={form.description} onChange={e => setForm({...form,description:e.target.value})} /></div>
 						<div className="space-y-1"><label className="text-xs font-medium">Material</label><Input value={form.material} onChange={e => setForm({...form,material:e.target.value})} /></div>
 						<div className="space-y-1"><label className="text-xs font-medium">Color</label><Input value={form.color} onChange={e => setForm({...form,color:e.target.value})} /></div>
@@ -63,8 +64,8 @@ const ProductCreateForm: React.FC<Props> = ({ onCreated }) => {
 					</div>
 					<Separator />
 					<div className="grid gap-4 sm:grid-cols-2">
-						<div className="space-y-1"><label className="text-xs font-medium flex items-center justify-between">SKU <button type="button" onClick={suggestSku} className="text-[10px] underline">Suggest</button></label><Input value={form.sku} onChange={e => setForm({...form,sku:e.target.value})} /><p className="text-[10px] text-muted-foreground">SKU is client-side only placeholder for now.</p></div>
-						<div className="space-y-1"><label className="text-xs font-medium flex items-center justify-between">Barcode <button type="button" onClick={suggestBarcode} className="text-[10px] underline">Generate</button></label><Input value={form.barcode} onChange={e => setForm({...form,barcode:e.target.value})} /><p className="text-[10px] text-muted-foreground">Barcode not yet sent in API payload.</p></div>
+						<div className="space-y-1"><label className="text-xs font-medium flex items-center justify-between">SKU <button type="button" onClick={suggestSku} className="text-[10px] underline">Suggest</button></label><Input value={form.sku} onChange={e => setForm({...form,sku:e.target.value})} /></div>
+						<div className="space-y-1"><label className="text-xs font-medium flex items-center justify-between">Barcode <button type="button" onClick={suggestBarcode} className="text-[10px] underline">Generate</button></label><Input value={form.barcode} onChange={e => setForm({...form,barcode:e.target.value})} /></div>
 					</div>
 					<Separator />
 					<div className="space-y-2"><label className="text-xs font-medium">Images</label><div className="border rounded-md p-6 text-center text-xs text-muted-foreground bg-muted/20">Drag & drop images or click to upload (future implementation).</div></div>

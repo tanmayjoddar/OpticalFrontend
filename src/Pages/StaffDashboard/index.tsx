@@ -23,8 +23,10 @@ import ProductSkuGenerator from "./Barcode/ProductSkuGenerator";
 import MissingBarcodes from "./Barcode/MissingBarcodes";
 import InvoicesList from "./Invoices/InvoicesList";
 import InvoiceCreate from "./Invoices/InvoiceCreate";
+import InvoicePayment from "./Invoices/InvoicePayment";
 import PrescriptionsList from "./Prescriptions/PrescriptionsList";
 import PrescriptionCreate from "./Prescriptions/PrescriptionCreate";
+import PrescriptionDetail from "./Prescriptions/PrescriptionDetail";
 import Reports from "./Reports/Reports";
 import StockReceipts from "./StockReceipts/StockReceipts";
 import StockReceiptCreate from "./StockReceipts/StockReceiptCreate";
@@ -95,11 +97,13 @@ const StaffDashboard = () => {
         {/* Invoice Management */}
         <Route path="invoices" element={<InvoicesList />} />
     <Route path="invoices/create" element={<InvoiceCreate />} />
+    <Route path="invoices/payment" element={<InvoicePayment />} />
     <Route path="invoices/:id" element={<Suspense fallback={<>Loading...</>}><InvoiceDetailLazy /></Suspense>} />
 
         {/* Prescription Management */}
         <Route path="prescriptions" element={<PrescriptionsList />} />
         <Route path="prescriptions/create" element={<PrescriptionCreate />} />
+        <Route path="prescriptions/:id" element={<PrescriptionDetail />} />
 
         {/* Reports */}
         <Route path="reports" element={<Reports />} />
