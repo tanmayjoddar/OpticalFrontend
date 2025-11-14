@@ -69,11 +69,14 @@ const ProductCreateForm: React.FC<Props> = ({ onCreated }) => {
 
         // Auto-fill from URL params if available
         const companyIdParam = searchParams.get("companyId");
-        if (
-          companyIdParam &&
-          companyList.some((c: Company) => c.id === Number(companyIdParam))
-        ) {
-          setForm((prev) => ({ ...prev, companyId: companyIdParam }));
+        if (companyIdParam) {
+          const paramId = Number(companyIdParam);
+          if (
+            !isNaN(paramId) &&
+            companyList.some((c: Company) => c.id === paramId)
+          ) {
+            setForm((prev) => ({ ...prev, companyId: String(paramId) }));
+          }
         }
       } catch {
         // Failed to load companies, users can enter manually
@@ -83,7 +86,6 @@ const ProductCreateForm: React.FC<Props> = ({ onCreated }) => {
     };
     fetchCompanies();
   }, [searchParams]);
-
   const validate = (): boolean => {
     const e: Record<string, string> = {};
     if (!form.name.trim()) e.name = "Name is required";
