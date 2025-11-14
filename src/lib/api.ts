@@ -813,11 +813,14 @@ export const RetailerAPI = {
       // Map deprecated 'active' -> 'isActive' for backward compatibility
       const finalParams: Record<string, unknown> = { ...params };
       if (
-        (finalParams as any).active !== undefined &&
+        (finalParams as unknown as Record<string, unknown>).active !==
+          undefined &&
         finalParams.isActive === undefined
       ) {
-        finalParams.isActive = (finalParams as any).active;
-        delete (finalParams as any).active;
+        finalParams.isActive = (
+          finalParams as unknown as Record<string, unknown>
+        ).active;
+        delete (finalParams as unknown as Record<string, unknown>).active;
       }
       return retailerApi
         .get("/shops", { params: finalParams })

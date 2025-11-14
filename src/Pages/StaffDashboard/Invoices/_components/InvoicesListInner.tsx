@@ -52,15 +52,15 @@ interface InvoiceRow {
 
 type StatusOption = { value: string; label: string; color: string };
 const STATUS_OPTIONS: StatusOption[] = [
-  { value: "paid", label: "Paid", color: "bg-green-600 text-white" },
-  { value: "unpaid", label: "Unpaid", color: "bg-orange-500 text-white" },
-  { value: "pending", label: "Pending", color: "bg-blue-500 text-white" },
-  { value: "cancelled", label: "Cancelled", color: "bg-red-600 text-white" },
+  { value: "PAID", label: "Paid", color: "bg-green-600 text-white" },
+  { value: "UNPAID", label: "Unpaid", color: "bg-orange-500 text-white" },
   {
-    value: "partially_paid",
+    value: "PARTIALLY_PAID",
     label: "Partially Paid",
     color: "bg-amber-500 text-white",
   },
+  { value: "CANCELLED", label: "Cancelled", color: "bg-red-600 text-white" },
+  { value: "REFUNDED", label: "Refunded", color: "bg-red-500 text-white" },
 ];
 const pageSizeOptions = [10, 20, 50];
 
@@ -103,16 +103,30 @@ const InvoicesListInner: React.FC = () => {
       if (staffId) params.staffId = Number(staffId);
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
+
       const res = await StaffAPI.invoices.getAll(params);
+
+      console.log("📋 Invoices API Response:", res); // Debug
+
+      // Handle multiple response formats
       if (Array.isArray(res)) {
         setInvoices(res as InvoiceRow[]);
         setTotal(res.length);
+      } else if (res?.invoices && Array.isArray(res.invoices)) {
+        // API spec format: { invoices, pagination }
+        setInvoices(res.invoices as InvoiceRow[]);
+        setTotal(res.pagination?.totalItems || res.invoices.length);
+      } else if (res?.items && Array.isArray(res.items)) {
+        // Legacy format: { items, total }
+        setInvoices(res.items as InvoiceRow[]);
+        setTotal(res.total || res.items.length);
       } else {
-        setInvoices(res?.items || []);
-        setTotal(res?.total || res?.items?.length || 0);
+        setInvoices([]);
+        setTotal(0);
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
+      console.error("❌ Invoice fetch error:", error);
       setError(error?.response?.data?.message || "Failed to load invoices");
     } finally {
       setLoading(false);
@@ -207,8 +221,9 @@ const InvoicesListInner: React.FC = () => {
 
   const statusBadge = (st?: string) => {
     if (!st) return <Badge variant="secondary">—</Badge>;
-    const lower = st.toLowerCase();
-    const found = STATUS_OPTIONS.find((o) => o.value === lower);
+    const found = STATUS_OPTIONS.find(
+      (o) => o.value === st || o.value.toLowerCase() === st.toLowerCase()
+    );
     const cls = found ? found.color : "bg-gray-300 text-gray-800";
     return (
       <span className={`px-2 py-0.5 rounded text-xs font-medium ${cls}`}>

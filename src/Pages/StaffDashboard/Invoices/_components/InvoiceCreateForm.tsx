@@ -44,7 +44,7 @@ const InvoiceCreateForm: React.FC<InvoiceCreateFormProps> = ({ onCreated }) => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<Invoice | null>(null);
   const [paidAmount, setPaidAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [paymentMethod, setPaymentMethod] = useState("CASH");
   const [giftCardCode, setGiftCardCode] = useState("");
   const [giftLookupLoading, setGiftLookupLoading] = useState(false);
   const [giftData, setGiftData] = useState<{
@@ -72,11 +72,17 @@ const InvoiceCreateForm: React.FC<InvoiceCreateFormProps> = ({ onCreated }) => {
           page: 1,
           limit: 100,
         });
-        const list = Array.isArray(data?.items)
-          ? data.items
-          : Array.isArray(data)
-          ? data
-          : [];
+        let list: typeof productOptions = [];
+        if (Array.isArray(data?.products)) {
+          // Response has { products, pagination, ... }
+          list = data.products;
+        } else if (Array.isArray(data?.items)) {
+          // Response has { items, total, ... } (legacy format)
+          list = data.items;
+        } else if (Array.isArray(data)) {
+          // Fallback: data is an array
+          list = data;
+        }
         setProductOptions(list);
       } catch {
         // ignore
@@ -176,7 +182,7 @@ const InvoiceCreateForm: React.FC<InvoiceCreateFormProps> = ({ onCreated }) => {
     setError(null);
     setSuccess(null);
     setPaidAmount("");
-    setPaymentMethod("cash");
+    setPaymentMethod("CASH");
     setGiftCardCode("");
     setGiftData(null);
   };
@@ -315,9 +321,9 @@ const InvoiceCreateForm: React.FC<InvoiceCreateFormProps> = ({ onCreated }) => {
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
             >
-              {["cash", "card", "upi", "other"].map((m) => (
+              {["CASH", "CARD", "UPI", "GIFT_CARD", "OTHER"].map((m) => (
                 <option key={m} value={m}>
-                  {m.toUpperCase()}
+                  {m}
                 </option>
               ))}
             </select>
