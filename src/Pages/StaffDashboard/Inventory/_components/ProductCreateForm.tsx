@@ -360,7 +360,8 @@ const ProductCreateForm: React.FC<Props> = ({ onCreated }) => {
               <>
                 <Button
                   variant="outline"
-                  onClick={() => navigateToDetail(created.id)}
+                  onClick={() => created.id && navigateToDetail(created.id)}
+                  disabled={!created.id}
                 >
                   View Product
                 </Button>
