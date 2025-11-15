@@ -148,9 +148,11 @@ export default function RetailerShops() {
     }
   }, [isActiveFilter, partnershipTypeFilter, search, page, limit]);
 
+  // Load data when filters change
   useEffect(() => {
     loadData();
-  }, [loadData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActiveFilter, partnershipTypeFilter, search, page, limit]);
 
   // Unified URL sync using hook
   useQuerySync<{
@@ -193,9 +195,6 @@ export default function RetailerShops() {
       else if (!next.limit && limit !== 10) setLimit(10);
     },
     keys: ["search", "active", "partner", "page", "limit"],
-    onExternalChange: () => {
-      setTimeout(() => loadData(), 0);
-    },
   });
 
   // Client-side filtering fallback (if API ignored filters)

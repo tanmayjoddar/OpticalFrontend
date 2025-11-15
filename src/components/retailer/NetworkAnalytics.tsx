@@ -89,9 +89,11 @@ export default function NetworkAnalytics() {
     }
   }, []);
 
+  // Load network data on mount only
   useEffect(() => {
     loadNetworkData();
-  }, [loadNetworkData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   if (loading) {
     return (

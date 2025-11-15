@@ -63,9 +63,30 @@ export default function DiscoverShops({ onShopsLoaded }: DiscoverShopsProps) {
     }
   }, [onShopsLoaded]);
 
+  // Load available shops on mount only (not on every render)
   useEffect(() => {
-    loadShops();
-  }, [loadShops]);
+    const init = async () => {
+      try {
+        setError(null);
+        setLoading(true);
+        const response = await RetailerAPI.shops.available();
+        const availableShops = response?.availableShops || [];
+        setShops(availableShops);
+        onShopsLoaded?.();
+      } catch (e) {
+        const message =
+          typeof e === "object" && e && "message" in e
+            ? String((e as Record<string, unknown>).message)
+            : "Failed to load available shops";
+        setError(message);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    };
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   const filtered = useMemo(() => {
     if (!search) return shops;
