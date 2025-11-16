@@ -21,7 +21,9 @@ import {
   CalendarDays,
 } from "lucide-react";
 
-interface IconProps { className?: string }
+interface IconProps {
+  className?: string;
+}
 interface NavigationItem {
   name: string;
   href: string;
@@ -47,7 +49,11 @@ const navigation: NavigationItem[] = [
     icon: Users,
     submenu: [
       { name: "All Patients", href: "/staff-dashboard/patients", icon: Users },
-      { name: "Add Patient", href: "/staff-dashboard/patients/create", icon: UserPlus },
+      {
+        name: "Add Patient",
+        href: "/staff-dashboard/patients/create",
+        icon: UserPlus,
+      },
     ],
   },
   {
@@ -55,10 +61,26 @@ const navigation: NavigationItem[] = [
     href: "/staff-dashboard/customers",
     icon: ShoppingCart,
     submenu: [
-      { name: "All Customers", href: "/staff-dashboard/customers", icon: Users },
-      { name: "Add Customer", href: "/staff-dashboard/customers/create", icon: UserPlus },
-      { name: "Create + Invoice", href: "/staff-dashboard/customers/create-invoice", icon: Plus },
-      { name: "Hotspots", href: "/staff-dashboard/customers/hotspots", icon: Users },
+      {
+        name: "All Customers",
+        href: "/staff-dashboard/customers",
+        icon: Users,
+      },
+      {
+        name: "Add Customer",
+        href: "/staff-dashboard/customers/create",
+        icon: UserPlus,
+      },
+      {
+        name: "Create + Invoice",
+        href: "/staff-dashboard/customers/create-invoice",
+        icon: Plus,
+      },
+      {
+        name: "Hotspots",
+        href: "/staff-dashboard/customers/hotspots",
+        icon: Users,
+      },
     ],
   },
   {
@@ -66,15 +88,47 @@ const navigation: NavigationItem[] = [
     href: "/staff-dashboard/inventory",
     icon: Package,
     submenu: [
-  { name: "Overview", href: "/staff-dashboard/inventory", icon: Package },
-  { name: "Companies", href: "/staff-dashboard/inventory/companies", icon: Package },
-  { name: "Product Catalog", href: "/staff-dashboard/inventory/products", icon: Package },
-      { name: "Add Product", href: "/staff-dashboard/inventory/products/create", icon: Plus },
-      { name: "Add Company", href: "/staff-dashboard/inventory/companies/new", icon: Plus },
-  { name: "Stock Movements", href: "/staff-dashboard/inventory/stock-movements", icon: TrendingUpIcon },
-  { name: "Quick Stock", href: "/staff-dashboard/inventory/quick-stock", icon: TrendingUpIcon },
-  { name: "Stock Out (Barcode)", href: "/staff-dashboard/inventory/stock-out", icon: TrendingUpIcon },
-  { name: "Barcode Lookup", href: "/staff-dashboard/inventory/lookup-barcode", icon: ScanLine },
+      { name: "Overview", href: "/staff-dashboard/inventory", icon: Package },
+      {
+        name: "Companies",
+        href: "/staff-dashboard/inventory/companies",
+        icon: Package,
+      },
+      {
+        name: "Product Catalog",
+        href: "/staff-dashboard/inventory/products",
+        icon: Package,
+      },
+      {
+        name: "Add Product",
+        href: "/staff-dashboard/inventory/products/create",
+        icon: Plus,
+      },
+      {
+        name: "Add Company",
+        href: "/staff-dashboard/inventory/companies/new",
+        icon: Plus,
+      },
+      {
+        name: "Stock Movements",
+        href: "/staff-dashboard/inventory/stock-movements",
+        icon: TrendingUpIcon,
+      },
+      {
+        name: "Quick Stock",
+        href: "/staff-dashboard/inventory/quick-stock",
+        icon: TrendingUpIcon,
+      },
+      {
+        name: "Stock Out (Barcode)",
+        href: "/staff-dashboard/inventory/stock-out",
+        icon: TrendingUpIcon,
+      },
+      {
+        name: "Barcode Lookup",
+        href: "/staff-dashboard/inventory/lookup-barcode",
+        icon: ScanLine,
+      },
     ],
   },
   {
@@ -84,10 +138,26 @@ const navigation: NavigationItem[] = [
     badge: "New",
     submenu: [
       { name: "Scanner", href: "/staff-dashboard/barcode", icon: ScanLine },
-      { name: "Generate Label", href: "/staff-dashboard/barcode/generate", icon: ScanLine },
-      { name: "Assign Barcodes", href: "/staff-dashboard/barcode/assign", icon: ScanLine },
-      { name: "Generate SKU", href: "/staff-dashboard/barcode/sku", icon: ScanLine },
-      { name: "Missing", href: "/staff-dashboard/barcode/missing", icon: ScanLine },
+      {
+        name: "Generate Label",
+        href: "/staff-dashboard/barcode/generate",
+        icon: ScanLine,
+      },
+      {
+        name: "Assign Barcodes",
+        href: "/staff-dashboard/barcode/assign",
+        icon: ScanLine,
+      },
+      {
+        name: "Generate SKU",
+        href: "/staff-dashboard/barcode/sku",
+        icon: ScanLine,
+      },
+      {
+        name: "Missing",
+        href: "/staff-dashboard/barcode/missing",
+        icon: ScanLine,
+      },
     ],
   },
   {
@@ -95,8 +165,16 @@ const navigation: NavigationItem[] = [
     href: "/staff-dashboard/invoices",
     icon: FileText,
     submenu: [
-      { name: "All Invoices", href: "/staff-dashboard/invoices", icon: FileText },
-      { name: "Create Invoice", href: "/staff-dashboard/invoices/create", icon: Plus },
+      {
+        name: "All Invoices",
+        href: "/staff-dashboard/invoices",
+        icon: FileText,
+      },
+      {
+        name: "Create Invoice",
+        href: "/staff-dashboard/invoices/create",
+        icon: Plus,
+      },
     ],
   },
   {
@@ -104,8 +182,16 @@ const navigation: NavigationItem[] = [
     href: "/staff-dashboard/prescriptions",
     icon: Stethoscope,
     submenu: [
-      { name: "All Prescriptions", href: "/staff-dashboard/prescriptions", icon: Stethoscope },
-      { name: "Create Prescription", href: "/staff-dashboard/prescriptions/create", icon: Plus },
+      {
+        name: "All Prescriptions",
+        href: "/staff-dashboard/prescriptions",
+        icon: Stethoscope,
+      },
+      {
+        name: "Create Prescription",
+        href: "/staff-dashboard/prescriptions/create",
+        icon: Plus,
+      },
     ],
   },
   {
@@ -118,9 +204,21 @@ const navigation: NavigationItem[] = [
     href: "/staff-dashboard/gift-cards",
     icon: Receipt,
     submenu: [
-      { name: "Issue Card", href: "/staff-dashboard/gift-cards/issue", icon: Plus },
-      { name: "Redeem Card", href: "/staff-dashboard/gift-cards/redeem", icon: Plus },
-      { name: "Check Balance", href: "/staff-dashboard/gift-cards/balance", icon: Plus },
+      {
+        name: "Issue Card",
+        href: "/staff-dashboard/gift-cards/issue",
+        icon: Plus,
+      },
+      {
+        name: "Redeem Card",
+        href: "/staff-dashboard/gift-cards/redeem",
+        icon: Plus,
+      },
+      {
+        name: "Check Balance",
+        href: "/staff-dashboard/gift-cards/balance",
+        icon: Plus,
+      },
     ],
   },
   {
@@ -136,7 +234,11 @@ interface StaffSidebarProps {
   onClose?: () => void;
 }
 
-const StaffSidebar = ({ mobile = false, open = false, onClose }: StaffSidebarProps) => {
+const StaffSidebar = ({
+  mobile = false,
+  open = false,
+  onClose,
+}: StaffSidebarProps) => {
   const location = useLocation();
 
   const isActive = (href: string) => {
@@ -147,89 +249,102 @@ const StaffSidebar = ({ mobile = false, open = false, onClose }: StaffSidebarPro
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Logo/Brand */}
-      <div className="flex items-center px-6 py-4 border-b border-sidebar-border bg-sidebar">
+      <div className="flex items-center px-6 py-4 border-b border-sidebar-border bg-sidebar flex-shrink-0">
         <div className="flex items-center">
           <div className="w-8 h-8 rounded-xl clay flex items-center justify-center">
             <Activity className="h-5 w-5 text-primary" />
           </div>
           <div className="ml-3">
-            <h2 className="text-lg font-bold text-brand-gradient">OpticStaff</h2>
+            <h2 className="text-lg font-bold text-brand-gradient">
+              OpticStaff
+            </h2>
             <p className="text-xs text-muted-foreground">Staff Portal</p>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <ScrollArea className="flex-1 px-3 py-4">
-        <nav className="space-y-2">
-          {navigation.map((item) => (
-            <div key={item.name}>
-              <Link
-                to={item.href}
-                onClick={mobile ? onClose : undefined}
-                className={cn(
-                  "group flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-colors clay",
-                  isActive(item.href)
-                    ? "ring-1 ring-primary/25"
-                    : "hover:ring-1 hover:ring-primary/15"
-                )}
-              >
-                <span className={cn("mr-3 h-5 w-5 flex-shrink-0", isActive(item.href) ? "text-primary" : "text-muted-foreground")}>
-                  <item.icon className="h-5 w-5" />
-                </span>
-                <span className="flex-1">{item.name}</span>
-                {item.badge && (
-                  <Badge variant="secondary" className="ml-2 h-5 text-xs">
-                    {item.badge}
-                  </Badge>
-                )}
-              </Link>
+      <ScrollArea className="flex-1 min-h-0 overflow-hidden">
+        <div className="px-3 py-4 space-y-2">
+          <nav className="space-y-2">
+            {navigation.map((item) => (
+              <div key={item.name}>
+                <Link
+                  to={item.href}
+                  onClick={mobile ? onClose : undefined}
+                  className={cn(
+                    "group flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-colors clay",
+                    isActive(item.href)
+                      ? "ring-1 ring-primary/25"
+                      : "hover:ring-1 hover:ring-primary/15"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "mr-3 h-5 w-5 flex-shrink-0",
+                      isActive(item.href)
+                        ? "text-primary"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                  </span>
+                  <span className="flex-1">{item.name}</span>
+                  {item.badge && (
+                    <Badge variant="secondary" className="ml-2 h-5 text-xs">
+                      {item.badge}
+                    </Badge>
+                  )}
+                </Link>
 
-              {/* Submenu */}
-              {item.submenu && isActive(item.href) && (
-                <div className="mt-1 ml-6 space-y-1">
-                  {item.submenu.map((subItem) => (
-                    <Link
-                      key={subItem.name}
-                      to={subItem.href}
-                      onClick={mobile ? onClose : undefined}
-                      className={cn(
-                        "flex items-center px-3 py-1.5 text-sm rounded-lg transition-colors",
-                        location.pathname === subItem.href
-                          ? "bg-muted text-foreground"
-                          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                      )}
-                    >
-                      <subItem.icon className="mr-2 h-4 w-4" />
-                      {subItem.name}
-                    </Link>
-                  ))}
+                {/* Submenu */}
+                {item.submenu && isActive(item.href) && (
+                  <div className="mt-1 ml-6 space-y-1">
+                    {item.submenu.map((subItem) => (
+                      <Link
+                        key={subItem.name}
+                        to={subItem.href}
+                        onClick={mobile ? onClose : undefined}
+                        className={cn(
+                          "flex items-center px-3 py-1.5 text-sm rounded-lg transition-colors",
+                          location.pathname === subItem.href
+                            ? "bg-muted text-foreground"
+                            : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                        )}
+                      >
+                        <subItem.icon className="mr-2 h-4 w-4" />
+                        {subItem.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </nav>
+
+          <Separator className="my-4" />
+
+          {/* Quick Stats */}
+          <div className="px-3">
+            <div className="glass-card rounded-lg p-4">
+              <h3 className="text-sm font-medium mb-2">Quick Stats</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    Today's Patients
+                  </span>
+                  <span className="font-medium">—</span>
                 </div>
-              )}
-            </div>
-          ))}
-        </nav>
-
-        <Separator className="my-4" />
-
-        {/* Quick Stats */}
-        <div className="px-3">
-          <div className="glass-card rounded-lg p-4">
-            <h3 className="text-sm font-medium mb-2">Quick Stats</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Today's Patients</span>
-                <span className="font-medium">—</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Pending Orders</span>
-                <span className="font-medium">—</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Low Stock Items</span>
-                <span className="font-medium text-orange-600">—</span>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Pending Orders</span>
+                  <span className="font-medium">—</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Low Stock Items</span>
+                  <span className="font-medium text-orange-600">—</span>
+                </div>
               </div>
             </div>
           </div>

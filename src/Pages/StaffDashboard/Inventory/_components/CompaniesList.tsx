@@ -207,7 +207,9 @@ const CompaniesList: React.FC = () => {
                       </p>
                       <Button
                         size="sm"
-                        onClick={() => navigate("/staff-dashboard/inventory/companies/new")}
+                        onClick={() =>
+                          navigate("/staff-dashboard/inventory/companies/new")
+                        }
                       >
                         Create First Company
                       </Button>
@@ -248,7 +250,9 @@ const CompaniesList: React.FC = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            navigate(`/staff-dashboard/inventory/companies/${c.id}/products`);
+                            navigate(
+                              `/staff-dashboard/inventory/companies/${c.id}/products`
+                            );
                           }}
                         >
                           View Products
@@ -257,7 +261,9 @@ const CompaniesList: React.FC = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            navigate(`/staff-dashboard/inventory/products/create?companyId=${c.id}`);
+                            navigate(
+                              `/staff-dashboard/inventory/products/create?companyId=${c.id}`
+                            );
                           }}
                         >
                           Add Product
