@@ -488,13 +488,13 @@ export default function RetailerOverview() {
                 <div className="p-3 rounded-md bg-muted/40">
                   <p className="text-xs text-muted-foreground">Total Revenue</p>
                   <p className="text-lg font-semibold">
-                    {formatCurrency(sales?.salesData.totalRevenue)}
+                    {formatCurrency(sales?.salesData?.totalRevenue)}
                   </p>
                 </div>
                 <div className="p-3 rounded-md bg-muted/40">
                   <p className="text-xs text-muted-foreground">Total Orders</p>
                   <p className="text-lg font-semibold">
-                    {formatNumber(sales?.salesData.totalOrders)}
+                    {formatNumber(sales?.salesData?.totalOrders)}
                   </p>
                 </div>
                 <div className="p-3 rounded-md bg-muted/40">
@@ -502,13 +502,13 @@ export default function RetailerOverview() {
                     Avg Order Value
                   </p>
                   <p className="text-lg font-semibold">
-                    {formatCurrency(sales?.salesData.averageOrderValue)}
+                    {formatCurrency(sales?.salesData?.averageOrderValue)}
                   </p>
                 </div>
                 <div className="p-3 rounded-md bg-muted/40">
                   <p className="text-xs text-muted-foreground">Growth Rate</p>
                   <p className="text-lg font-semibold">
-                    {sales?.salesData.growthRate ?? 0}%
+                    {sales?.salesData?.growthRate ?? 0}%
                   </p>
                 </div>
               </div>
