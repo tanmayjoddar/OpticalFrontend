@@ -595,32 +595,38 @@ export const StaffAPI = {
     // Create new prescription
     create: (data: {
       patientId: number;
-      rightEye?: { sph?: string; cyl?: string; axis?: string; add?: string };
-      leftEye?: { sph?: string; cyl?: string; axis?: string; add?: string };
-      sphereLeft?: number;
-      sphereRight?: number;
-      cylinderLeft?: number;
-      cylinderRight?: number;
-      axisLeft?: number;
-      axisRight?: number;
-      addLeft?: number;
-      addRight?: number;
-      pupilDistance?: number;
+      rightEye?: {
+        type?: string;
+        sph?: string;
+        cyl?: string;
+        axis?: string;
+        add?: string;
+        pd?: string;
+        bc?: string;
+        remarks?: string;
+      };
+      leftEye?: {
+        type?: string;
+        sph?: string;
+        cyl?: string;
+        axis?: string;
+        add?: string;
+        pd?: string;
+        bc?: string;
+        remarks?: string;
+      };
       notes?: string;
-      shopId?: number;
-      doctor?: string;
-      date?: string;
     }) => staffApi.post("/api/prescription", data).then((r) => r.data),
     // Download prescription as PDF
     getPdf: (id: number) =>
       staffApi
         .get(`/api/prescription/${id}/pdf`, { responseType: "blob" })
         .then((r) => r.data as Blob),
-    // Get thermal print HTML
+    // Get thermal print data
     getThermal: (id: number) =>
       staffApi
-        .get(`/api/prescription/${id}/thermal`, { responseType: "text" })
-        .then((r) => r.data as string),
+        .get(`/api/prescription/${id}/thermal`, { responseType: "json" })
+        .then((r) => r.data as { thermalContent: string }),
   },
 
   // Reports
