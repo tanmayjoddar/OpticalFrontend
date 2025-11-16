@@ -5,8 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { StaffAPI } from "@/lib/api";
 import { ArrowLeft } from "lucide-react";
+
+const LENS_TYPES = ["Progressive", "Bifocal", "Single Vision", "Trifocal"];
 
 interface EyePrescription {
   type: string;
@@ -90,7 +99,7 @@ const PrescriptionCreate = () => {
           remarks: leftEye.remarks.trim(),
         },
         notes: notes.trim(),
-      };
+      }; 
 
       const res = await StaffAPI.prescriptions.create(payload);
       setResult(res);
@@ -190,12 +199,21 @@ const PrescriptionCreate = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
               <div>
                 <label className="text-xs font-medium">Type</label>
-                <Input
+                <Select
                   value={rightEye.type}
-                  onChange={(e) => updateRightEye("type", e.target.value)}
-                  placeholder="e.g., Progressive"
-                  disabled={loading}
-                />
+                  onValueChange={(value) => updateRightEye("type", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LENS_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-xs font-medium">Sphere (SPH)</label>
@@ -271,12 +289,21 @@ const PrescriptionCreate = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
               <div>
                 <label className="text-xs font-medium">Type</label>
-                <Input
+                <Select
                   value={leftEye.type}
-                  onChange={(e) => updateLeftEye("type", e.target.value)}
-                  placeholder="e.g., Progressive"
-                  disabled={loading}
-                />
+                  onValueChange={(value) => updateLeftEye("type", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LENS_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-xs font-medium">Sphere (SPH)</label>
