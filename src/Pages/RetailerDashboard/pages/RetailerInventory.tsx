@@ -87,10 +87,12 @@ export default function RetailerInventory() {
   // Optimistic summary adjustment when a distribution is created (Task 38)
   useEffect(() => {
     const handler = (e: Event) => {
-      const detail: any = (e as CustomEvent).detail;
+      const detail = (
+        e as CustomEvent<{ lines?: Array<{ quantity?: number }> }>
+      ).detail;
       if (!detail || !Array.isArray(detail.lines)) return;
-      const addedQty = detail.lines.reduce(
-        (a: number, l: any) => a + (l.quantity || 0),
+      const addedQty = (detail.lines ?? []).reduce(
+        (a: number, l: { quantity?: number }) => a + (l.quantity || 0),
         0
       );
       if (addedQty <= 0) return;
@@ -128,11 +130,14 @@ export default function RetailerInventory() {
         }
       }, 1200);
     };
-    window.addEventListener("retailer:distribution-created", handler as any);
+    window.addEventListener(
+      "retailer:distribution-created",
+      handler as unknown as EventListener
+    );
     return () =>
       window.removeEventListener(
         "retailer:distribution-created",
-        handler as any
+        handler as unknown as EventListener
       );
   }, []);
 
@@ -602,7 +607,9 @@ function ProductsTable({
         page: pg,
         limit: 10,
       });
-      setData((res as any) || { products: [], pagination: null });
+      setData(
+        (res as unknown as typeof data) || { products: [], pagination: null }
+      );
     } catch (e) {
       const message =
         typeof e === "object" && e && "message" in e
@@ -654,7 +661,10 @@ function ProductsTable({
       try {
         const comps = await RetailerAPI.inventory.companies();
         setCompanies(
-          (comps as any)?.map((c: any) => ({ id: c.id, name: c.name })) || []
+          (comps as Array<{ id: number; name: string }>)?.map((c) => ({
+            id: c.id,
+            name: c.name,
+          })) || []
         );
       } catch {
         /* ignore */
@@ -713,16 +723,24 @@ function ProductsTable({
                 p.product?.name?.toLowerCase?.()
               )}
               onCancel={() => setAddRetailerOpen(false)}
-              onAdded={(createdOptimistic: any) => {
+              onAdded={(createdOptimistic: unknown) => {
                 setData((d) =>
                   page === 1
-                    ? { ...d, products: [createdOptimistic, ...d.products] }
+                    ? {
+                        ...d,
+                        products: [
+                          createdOptimistic as ProductRow,
+                          ...d.products,
+                        ],
+                      }
                     : d
                 );
                 setTimeout(() => fetchData(page), 300);
                 try {
                   refreshSummaryRef.current?.();
-                } catch {}
+                } catch {
+                  // ignore
+                }
                 setAddRetailerOpen(false);
               }}
             />
@@ -793,7 +811,9 @@ function ProductsTable({
                       <span
                         className={`inline-block rounded px-2 py-0.5 text-xs ${"bg-muted/60"}`}
                       >
-                        {(p as any).isActive === false ? "No" : "Yes"}
+                        {(p as Record<string, unknown>).isActive === false
+                          ? "No"
+                          : "Yes"}
                       </span>
                     </td>
                     <td className="py-2 pr-4 space-x-2 whitespace-nowrap">
@@ -987,9 +1007,14 @@ function ProductsTable({
                     setTimeout(() => fetchData(page), 300);
                     try {
                       refreshSummaryRef.current?.();
-                    } catch {}
-                  } catch (e: any) {
-                    toast.error(e?.message || "Update failed");
+                    } catch {
+                      // ignore
+                    }
+                  } catch (e: unknown) {
+                    toast.error(
+                      String((e as Record<string, unknown>).message) ||
+                        "Update failed"
+                    );
                   } finally {
                     setEditing({
                       open: false,
@@ -1244,9 +1269,14 @@ function ProductsTable({
                     setTimeout(() => fetchData(page), 400);
                     try {
                       refreshSummaryRef.current?.();
-                    } catch {}
-                  } catch (e: any) {
-                    toast.error(e?.message || "Adjustment failed");
+                    } catch {
+                      // ignore
+                    }
+                  } catch (e: unknown) {
+                    toast.error(
+                      String((e as Record<string, unknown>).message) ||
+                        "Adjustment failed"
+                    );
                     setTimeout(() => fetchData(page), 100);
                   }
                 }}
@@ -1279,7 +1309,9 @@ function CompaniesSection() {
     id: number;
     name: string;
   } | null>(null);
-  const [companyProducts, setCompanyProducts] = useState<any[] | null>(null);
+  const [companyProducts, setCompanyProducts] = useState<Array<
+    Record<string, unknown>
+  > | null>(null);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [companyProductsPage, setCompanyProductsPage] = useState(1);
   const [companyProductsLimit] = useState(10);
@@ -1289,7 +1321,10 @@ function CompaniesSection() {
   const [companyProductsType, setCompanyProductsType] = useState<string>(""); // '' means all
   const [productsError, setProductsError] = useState<string | null>(null);
   // edit product modal state
-  const [editProduct, setEditProduct] = useState<any | null>(null);
+  const [editProduct, setEditProduct] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
   const [savingProduct, setSavingProduct] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -1298,15 +1333,23 @@ function CompaniesSection() {
       if (!opts.silent) setLoading(true);
       else setRefreshing(true);
       setError(null);
-      const res: any = await RetailerAPI.inventory.companies();
+      const res = await RetailerAPI.inventory.companies();
       // Accept either array or { companies: [] }
-      const list: any[] = Array.isArray(res) ? res : res?.companies || [];
+      const list = Array.isArray(res)
+        ? (res as unknown as Array<Record<string, unknown>>)
+        : ((res as unknown as Record<string, unknown>)?.companies as Array<
+            Record<string, unknown>
+          >) || [];
       setCompanies(
         list.map((c) => ({
-          id: c.id,
-          name: c.name,
-          description: c.description,
-          productCount: c.productCount ?? c.productsCount ?? c.totalProducts, // tolerate backend naming variants
+          id: (c as Record<string, unknown>).id as number,
+          name: (c as Record<string, unknown>).name as string,
+          description: (c as Record<string, unknown>).description as
+            | string
+            | undefined,
+          productCount: ((c as Record<string, unknown>).productCount ??
+            (c as Record<string, unknown>).productsCount ??
+            (c as Record<string, unknown>).totalProducts) as number | undefined, // tolerate backend naming variants
         }))
       );
     } catch (e) {
@@ -1353,7 +1396,9 @@ function CompaniesSection() {
                       "company-name-input"
                     ) as HTMLInputElement | null
                   )?.focus();
-                } catch {}
+                } catch {
+                  // ignore
+                }
               }, 10);
             } else {
               setNewCompany({ name: "", description: "" });
@@ -1436,12 +1481,13 @@ function CompaniesSection() {
                         name: nm,
                         description: newCompany.description || undefined,
                       };
-                      const created: any =
-                        await RetailerAPI.inventory.addCompany(createPayload);
+                      const created = (await RetailerAPI.inventory.addCompany(
+                        createPayload
+                      )) as unknown as Record<string, unknown>;
                       toast.success("Company added");
                       setCompanies((prev) => [
                         {
-                          id: created?.id ?? Date.now(),
+                          id: (created?.id as number) ?? Date.now(),
                           name: nm,
                           description: createPayload.description,
                         },
@@ -1450,8 +1496,11 @@ function CompaniesSection() {
                       setNewCompany({ name: "", description: "" });
                       setOpenAdd(false);
                       fetchCompanies({ silent: true });
-                    } catch (e) {
-                      toast.error((e as any)?.message || "Failed to add");
+                    } catch (e: unknown) {
+                      toast.error(
+                        String((e as Record<string, unknown>)?.message) ||
+                          "Failed to add"
+                      );
                     } finally {
                       setSavingAdd(false);
                     }
@@ -1567,16 +1616,22 @@ function CompaniesSection() {
                         setLoadingProducts(true);
                         setProductsError(null);
                         try {
-                          const res: any =
-                            await RetailerAPI.inventory.productsByCompany(
+                          const res =
+                            (await RetailerAPI.inventory.productsByCompany(
                               c.id,
                               { page: 1, limit: companyProductsLimit }
-                            );
-                          setCompanyProducts(res?.products || []);
-                          setCompanyProductsTotal(res?.total ?? null);
-                        } catch (e) {
+                            )) as unknown as Record<string, unknown>;
+                          setCompanyProducts(
+                            (res?.products as Array<Record<string, unknown>>) ||
+                              []
+                          );
+                          setCompanyProductsTotal(
+                            (res?.total as number) ?? null
+                          );
+                        } catch (e: unknown) {
                           const msg =
-                            (e as any)?.message || "Failed to load products";
+                            String((e as Record<string, unknown>)?.message) ||
+                            "Failed to load products";
                           toast.error(msg);
                           setProductsError(msg);
                           setCompanyProducts([]);
@@ -1629,20 +1684,27 @@ function CompaniesSection() {
                     setLoadingProducts(true);
                     setProductsError(null);
                     try {
-                      const res: any =
-                        await RetailerAPI.inventory.productsByCompany(
+                      const res =
+                        (await RetailerAPI.inventory.productsByCompany(
                           viewCompany.id,
                           {
                             page: 1,
                             limit: companyProductsLimit,
-                            eyewearType: (val || undefined) as any,
+                            eyewearType: (val || undefined) as
+                              | "GLASSES"
+                              | "SUNGLASSES"
+                              | "LENSES"
+                              | undefined,
                           }
-                        );
-                      setCompanyProducts(res?.products || []);
-                      setCompanyProductsTotal(res?.total ?? null);
-                    } catch (er) {
+                        )) as unknown as Record<string, unknown>;
+                      setCompanyProducts(
+                        (res?.products as Array<Record<string, unknown>>) || []
+                      );
+                      setCompanyProductsTotal((res?.total as number) ?? null);
+                    } catch (er: unknown) {
                       const msg =
-                        (er as any)?.message || "Failed to load products";
+                        String((er as Record<string, unknown>)?.message) ||
+                        "Failed to load products";
                       toast.error(msg);
                       setProductsError(msg);
                       setCompanyProducts([]);
@@ -1661,18 +1723,22 @@ function CompaniesSection() {
                 companyId={viewCompany.id}
                 onAdded={async () => {
                   try {
-                    const res: any =
-                      await RetailerAPI.inventory.productsByCompany(
-                        viewCompany.id,
-                        {
-                          page: companyProductsPage,
-                          limit: companyProductsLimit,
-                          eyewearType: (companyProductsType ||
-                            undefined) as any,
-                        }
-                      );
-                    setCompanyProducts(res?.products || []);
-                    setCompanyProductsTotal(res?.total ?? null);
+                    const res = (await RetailerAPI.inventory.productsByCompany(
+                      viewCompany.id,
+                      {
+                        page: companyProductsPage,
+                        limit: companyProductsLimit,
+                        eyewearType: (companyProductsType || undefined) as
+                          | "GLASSES"
+                          | "SUNGLASSES"
+                          | "LENSES"
+                          | undefined,
+                      }
+                    )) as unknown as Record<string, unknown>;
+                    setCompanyProducts(
+                      (res?.products as Array<Record<string, unknown>>) || []
+                    );
+                    setCompanyProductsTotal((res?.total as number) ?? null);
                   } catch {
                     /* ignore */
                   }
@@ -1724,21 +1790,27 @@ function CompaniesSection() {
                     setLoadingProducts(true);
                     setProductsError(null);
                     try {
-                      const res: any =
-                        await RetailerAPI.inventory.productsByCompany(
+                      const res =
+                        (await RetailerAPI.inventory.productsByCompany(
                           viewCompany.id,
                           {
                             page: companyProductsPage,
                             limit: companyProductsLimit,
-                            eyewearType: (companyProductsType ||
-                              undefined) as any,
+                            eyewearType: (companyProductsType || undefined) as
+                              | "GLASSES"
+                              | "SUNGLASSES"
+                              | "LENSES"
+                              | undefined,
                           }
-                        );
-                      setCompanyProducts(res?.products || []);
-                      setCompanyProductsTotal(res?.total ?? null);
-                    } catch (er) {
+                        )) as unknown as Record<string, unknown>;
+                      setCompanyProducts(
+                        (res?.products as Array<Record<string, unknown>>) || []
+                      );
+                      setCompanyProductsTotal((res?.total as number) ?? null);
+                    } catch (er: unknown) {
                       const msg =
-                        (er as any)?.message || "Failed to load products";
+                        String((er as Record<string, unknown>)?.message) ||
+                        "Failed to load products";
                       setProductsError(msg);
                     } finally {
                       setLoadingProducts(false);
@@ -1761,14 +1833,26 @@ function CompaniesSection() {
                     </tr>
                   </thead>
                   <tbody>
-                    {companyProducts.map((p: any) => (
-                      <tr key={p.id} className="border-t">
-                        <td className="py-2 pr-4">{p.name}</td>
-                        <td className="py-2 pr-4 text-xs">{p.eyewearType}</td>
+                    {companyProducts.map((p, idx) => (
+                      <tr key={idx} className="border-t">
                         <td className="py-2 pr-4">
-                          ₹{p.basePrice?.toLocaleString?.()}
+                          {String((p as Record<string, unknown>).name)}
                         </td>
-                        <td className="py-2 pr-4">{p.sku}</td>
+                        <td className="py-2 pr-4 text-xs">
+                          {String((p as Record<string, unknown>).eyewearType)}
+                        </td>
+                        <td className="py-2 pr-4">
+                          ₹
+                          {(
+                            (p as Record<string, unknown>).basePrice as
+                              | number
+                              | null
+                              | undefined
+                          )?.toLocaleString?.()}
+                        </td>
+                        <td className="py-2 pr-4">
+                          {String((p as Record<string, unknown>).sku)}
+                        </td>
                         <td className="py-2 pr-4">
                           <div className="flex gap-2">
                             <Button
@@ -1823,22 +1907,30 @@ function CompaniesSection() {
                     setCompanyProductsPage(newPage);
                     setLoadingProducts(true);
                     try {
-                      const res: any =
-                        await RetailerAPI.inventory.productsByCompany(
+                      const res =
+                        (await RetailerAPI.inventory.productsByCompany(
                           viewCompany.id,
                           {
                             page: newPage,
                             limit: companyProductsLimit,
-                            eyewearType: (companyProductsType ||
-                              undefined) as any,
+                            eyewearType: (companyProductsType || undefined) as
+                              | "GLASSES"
+                              | "SUNGLASSES"
+                              | "LENSES"
+                              | undefined,
                           }
-                        );
-                      setCompanyProducts(res?.products || []);
-                      setCompanyProductsTotal(
-                        res?.total ?? companyProductsTotal
+                        )) as unknown as Record<string, unknown>;
+                      setCompanyProducts(
+                        (res?.products as Array<Record<string, unknown>>) || []
                       );
-                    } catch (er) {
-                      toast.error((er as any)?.message || "Load failed");
+                      setCompanyProductsTotal(
+                        (res?.total as number) ?? companyProductsTotal
+                      );
+                    } catch (er: unknown) {
+                      toast.error(
+                        String((er as Record<string, unknown>)?.message) ||
+                          "Load failed"
+                      );
                     } finally {
                       setLoadingProducts(false);
                     }
@@ -1867,22 +1959,30 @@ function CompaniesSection() {
                     setCompanyProductsPage(newPage);
                     setLoadingProducts(true);
                     try {
-                      const res: any =
-                        await RetailerAPI.inventory.productsByCompany(
+                      const res =
+                        (await RetailerAPI.inventory.productsByCompany(
                           viewCompany.id,
                           {
                             page: newPage,
                             limit: companyProductsLimit,
-                            eyewearType: (companyProductsType ||
-                              undefined) as any,
+                            eyewearType: (companyProductsType || undefined) as
+                              | "GLASSES"
+                              | "SUNGLASSES"
+                              | "LENSES"
+                              | undefined,
                           }
-                        );
-                      setCompanyProducts(res?.products || []);
-                      setCompanyProductsTotal(
-                        res?.total ?? companyProductsTotal
+                        )) as unknown as Record<string, unknown>;
+                      setCompanyProducts(
+                        (res?.products as Array<Record<string, unknown>>) || []
                       );
-                    } catch (er) {
-                      toast.error((er as any)?.message || "Load failed");
+                      setCompanyProductsTotal(
+                        (res?.total as number) ?? companyProductsTotal
+                      );
+                    } catch (er: unknown) {
+                      toast.error(
+                        String((er as Record<string, unknown>)?.message) ||
+                          "Load failed"
+                      );
                     } finally {
                       setLoadingProducts(false);
                     }
@@ -1919,17 +2019,24 @@ function CompaniesSection() {
                 >
                   <Input
                     placeholder="Name"
-                    value={editProduct.name}
+                    value={String(
+                      (editProduct as Record<string, unknown>).name
+                    )}
                     onChange={(e) =>
-                      setEditProduct({ ...editProduct, name: e.target.value })
+                      setEditProduct({
+                        ...(editProduct as Record<string, unknown>),
+                        name: e.target.value,
+                      })
                     }
                   />
                   <Input
                     placeholder="Description (optional)"
-                    value={editProduct.description || ""}
+                    value={String(
+                      (editProduct as Record<string, unknown>).description || ""
+                    )}
                     onChange={(e) =>
                       setEditProduct({
-                        ...editProduct,
+                        ...(editProduct as Record<string, unknown>),
                         description: e.target.value,
                       })
                     }
@@ -1937,10 +2044,12 @@ function CompaniesSection() {
                   <Input
                     type="number"
                     placeholder="Base Price"
-                    value={editProduct.basePrice}
+                    value={String(
+                      (editProduct as Record<string, unknown>).basePrice
+                    )}
                     onChange={(e) =>
                       setEditProduct({
-                        ...editProduct,
+                        ...(editProduct as Record<string, unknown>),
                         basePrice: e.target.value,
                       })
                     }
@@ -1956,12 +2065,24 @@ function CompaniesSection() {
                       id="edit-prod-submit"
                       disabled={
                         savingProduct ||
-                        !editProduct.name.trim() ||
-                        !(parseFloat(editProduct.basePrice) > 0)
+                        !String(
+                          (editProduct as Record<string, unknown>).name
+                        ).trim() ||
+                        !(
+                          parseFloat(
+                            String(
+                              (editProduct as Record<string, unknown>).basePrice
+                            )
+                          ) > 0
+                        )
                       }
                       onClick={async () => {
                         if (!editProduct) return;
-                        const priceNum = parseFloat(editProduct.basePrice);
+                        const priceNum = parseFloat(
+                          String(
+                            (editProduct as Record<string, unknown>).basePrice
+                          )
+                        );
                         if (!(priceNum > 0)) {
                           toast.error("Price must be > 0");
                           return;
@@ -1969,25 +2090,34 @@ function CompaniesSection() {
                         try {
                           setSavingProduct(true);
                           const payload = {
-                            name: editProduct.name.trim(),
-                            description: editProduct.description || undefined,
+                            name: String(
+                              (editProduct as Record<string, unknown>).name
+                            ).trim(),
+                            description:
+                              (editProduct as Record<string, unknown>)
+                                .description || undefined,
                             basePrice: priceNum,
                           };
                           await RetailerAPI.inventory.updateProduct(
-                            editProduct.id,
-                            payload as any
+                            (editProduct as Record<string, unknown>)
+                              .id as number,
+                            payload as Partial<Record<string, unknown>>
                           );
                           toast.success("Updated");
                           setCompanyProducts((list) =>
                             (list || []).map((p) =>
-                              p.id === editProduct.id
+                              (p as Record<string, unknown>).id ===
+                              (editProduct as Record<string, unknown>).id
                                 ? { ...p, ...payload, basePrice: priceNum }
                                 : p
                             )
                           );
                           setEditProduct(null);
-                        } catch (er: any) {
-                          toast.error(er?.message || "Update failed");
+                        } catch (er: unknown) {
+                          toast.error(
+                            String((er as Record<string, unknown>)?.message) ||
+                              "Update failed"
+                          );
                         } finally {
                           setSavingProduct(false);
                         }
@@ -2066,7 +2196,9 @@ function AddProductInline({
                   "add-prod-name"
                 ) as HTMLInputElement | null
               )?.focus();
-            } catch {}
+            } catch {
+              // ignore
+            }
           }, 15);
         }
       }}
@@ -2195,7 +2327,10 @@ function AddProductInline({
                     name: form.name.trim(),
                     description: form.description || undefined,
                     companyId,
-                    eyewearType: form.eyewearType as any,
+                    eyewearType: form.eyewearType as
+                      | "GLASSES"
+                      | "SUNGLASSES"
+                      | "LENSES",
                     frameType: form.frameType || undefined,
                     material: form.material || undefined,
                     basePrice: price,
@@ -2206,8 +2341,10 @@ function AddProductInline({
                   setStatusMsg("Saved");
                   onAdded();
                   setOpen(false);
-                } catch (e: any) {
-                  const msg = e?.message || "Add failed";
+                } catch (e: unknown) {
+                  const msg =
+                    String((e as Record<string, unknown>)?.message) ||
+                    "Add failed";
                   toast.error(msg);
                   setStatusMsg(msg);
                 } finally {
@@ -2235,13 +2372,15 @@ function RetailerAddProductForm({
 }: {
   existing: (string | undefined)[];
   onCancel: () => void;
-  onAdded: (p: any) => void;
+  onAdded: (p: unknown) => void;
 }) {
   const [step, setStep] = useState<"select" | "price">("select");
   const [loading, setLoading] = useState(false);
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<Array<Record<string, unknown>>>([]);
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<any | null>(null);
+  const [selected, setSelected] = useState<Record<string, unknown> | null>(
+    null
+  );
   const [wholesale, setWholesale] = useState("");
   const [retail, setRetail] = useState("");
   const [status, setStatus] = useState("Ready");
@@ -2254,8 +2393,10 @@ function RetailerAddProductForm({
       // For now, rely on user knowing productId previously created (fallback) if no products fetched.
       // Improvement placeholder: integrate real searchable endpoint when available.
       setProducts([]);
-    } catch (e: any) {
-      setError(e?.message || "Load failed");
+    } catch (e: unknown) {
+      setError(
+        String((e as Record<string, unknown>)?.message) || "Load failed"
+      );
     } finally {
       setLoading(false);
     }
@@ -2265,7 +2406,11 @@ function RetailerAddProductForm({
   }, []);
 
   const duplicate =
-    selected?.name && existing.includes(selected.name.toLowerCase());
+    selected &&
+    (selected as Record<string, unknown>).name &&
+    existing.includes(
+      String((selected as Record<string, unknown>).name).toLowerCase()
+    );
   const proceedSelect = () => {
     if (selected && !duplicate) setStep("price");
   };
@@ -2285,17 +2430,24 @@ function RetailerAddProductForm({
       setLoading(true);
       setStatus("Saving");
       setError(null);
-      const created: any = await RetailerAPI.inventory.addRetailerProduct({
-        productId: selected.id,
+      const created = (await RetailerAPI.inventory.addRetailerProduct({
+        productId: (selected as Record<string, unknown>).id as number,
         wholesalePrice: ws,
         retailPrice: rp,
-      });
+      })) as unknown as Record<string, unknown>;
       toast.success("Retailer product added");
       onAdded({
-        id: created?.id ?? Math.random(),
+        id: (created?.id as number) ?? Math.random(),
         product: {
-          name: selected.name,
-          company: { name: selected.company?.name },
+          name: (selected as Record<string, unknown>).name as string,
+          company: {
+            name: (
+              (selected as Record<string, unknown>).company as Record<
+                string,
+                unknown
+              >
+            )?.name as string,
+          },
         },
         wholesalePrice: ws,
         retailPrice: rp,
@@ -2304,8 +2456,8 @@ function RetailerAddProductForm({
         totalStock: 0,
         stockStatus: "NEW",
       });
-    } catch (e: any) {
-      setError(e?.message || "Add failed");
+    } catch (e: unknown) {
+      setError(String((e as Record<string, unknown>)?.message) || "Add failed");
       setStatus("Error");
     } finally {
       setLoading(false);
@@ -2331,21 +2483,35 @@ function RetailerAddProductForm({
                 .filter(
                   (p) =>
                     !search ||
-                    p.name.toLowerCase().includes(search.toLowerCase())
+                    String((p as Record<string, unknown>).name)
+                      .toLowerCase()
+                      .includes(search.toLowerCase())
                 )
                 .slice(0, 25)
                 .map((p) => (
                   <button
                     type="button"
-                    key={p.id}
+                    key={String((p as Record<string, unknown>).id)}
                     onClick={() => setSelected(p)}
                     className={`flex w-full items-center justify-between px-2 py-1 text-left hover:bg-muted/50 ${
-                      selected?.id === p.id ? "bg-muted" : ""
+                      (selected as Record<string, unknown>)?.id ===
+                      (p as Record<string, unknown>).id
+                        ? "bg-muted"
+                        : ""
                     }`}
                   >
-                    <span className="truncate">{p.name}</span>
+                    <span className="truncate">
+                      {String((p as Record<string, unknown>).name)}
+                    </span>
                     <span className="text-[10px] text-muted-foreground ml-2">
-                      {p.company?.name}
+                      {String(
+                        (
+                          (p as Record<string, unknown>).company as Record<
+                            string,
+                            unknown
+                          >
+                        )?.name
+                      )}
                     </span>
                   </button>
                 ))}
@@ -2359,8 +2525,10 @@ function RetailerAddProductForm({
           )}
           {selected && (
             <div className="flex items-center justify-between text-xs">
-              <span className="truncate">Selected: {selected.name}</span>
-              {duplicate && (
+              <span className="truncate">
+                Selected: {String((selected as Record<string, unknown>).name)}
+              </span>
+              {!!duplicate && (
                 <span className="text-red-600">Duplicate already added</span>
               )}
             </div>
@@ -2369,7 +2537,7 @@ function RetailerAddProductForm({
             <Button variant="outline" type="button" onClick={onCancel}>
               Cancel
             </Button>
-            <Button disabled={!selected || duplicate} onClick={proceedSelect}>
+            <Button disabled={!selected || !!duplicate} onClick={proceedSelect}>
               Next
             </Button>
           </div>
@@ -2379,7 +2547,9 @@ function RetailerAddProductForm({
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground">
             Set pricing for{" "}
-            <span className="font-medium">{selected?.name}</span>
+            <span className="font-medium">
+              {String((selected as Record<string, unknown>)?.name)}
+            </span>
           </p>
           <Input
             placeholder="Wholesale Price"

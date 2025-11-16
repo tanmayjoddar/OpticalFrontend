@@ -44,7 +44,7 @@ export default function RetailerDistributions() {
     try {
       setShopLoading(true);
       const res = await RetailerAPI.distributions.getByShop(shopView.id, { page: p, limit: 15 });
-      setShopData(res as any);
+      setShopData(res as unknown as typeof shopData);
     } catch {/* ignore */} finally { setShopLoading(false); }
   };
   // Create Distribution state
@@ -56,7 +56,7 @@ export default function RetailerDistributions() {
   // Detail drawer state
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [detailDistribution, setDetailDistribution] = useState<any | null>(null);
+  const [detailDistribution, setDetailDistribution] = useState<Record<string, unknown> | null>(null);
 
   const openDetail = async (distId: number) => {
     setDetailOpen(true);
@@ -64,10 +64,14 @@ export default function RetailerDistributions() {
     setDetailDistribution(null);
     try {
       // If API has dedicated endpoint; else find in current list
-      let record: any;
-      try { record = await (RetailerAPI as any).distributions?.get?.(distId); } catch {/* fallback */}
+      let record: Record<string, unknown> | null = null;
+      try {
+        const api = RetailerAPI as unknown as Record<string, unknown>;
+        const distributions = api.distributions as unknown as { get?: (id: number) => Promise<Record<string, unknown>> };
+        record = await distributions.get?.(distId) || null;
+      } catch {/* fallback */}
       if (!record) {
-        record = list.distributions.find(d => d.id === distId);
+        record = list.distributions.find(d => d.id === distId) as Record<string, unknown> || null;
       }
       setDetailDistribution(record || { id: distId });
     } catch {/* ignore */} finally { setDetailLoading(false); }
@@ -75,7 +79,7 @@ export default function RetailerDistributions() {
 
   // Metadata caching (in-memory + sessionStorage fallback) with 5 min TTL
   const META_TTL_MS = 5 * 60 * 1000;
-  const metaCacheRef = useRef<{ shops?: { data: any[]; ts: number }; products?: { data: any[]; ts: number } }>({});
+  const metaCacheRef = useRef<{ shops?: { data: Array<{ id: number; name: string }>; ts: number }; products?: { data: Array<{ id: number; label: string }>; ts: number } }>({});
   const loadMeta = async () => {
     const now = Date.now();
     // Shops
@@ -95,10 +99,17 @@ export default function RetailerDistributions() {
       if (useCached) {
         setShops(metaCacheRef.current.shops!.data);
       } else {
-        const shopsRes: any = await (RetailerAPI as any).shops?.list?.();
-        const data = Array.isArray(shopsRes) ? shopsRes.map((s: any) => ({ id: s.id, name: s.name })) : [];
+        const api = RetailerAPI as unknown as Record<string, unknown>;
+        const shops = api.shops as unknown as { list?: () => Promise<unknown> };
+        const shopsRes = await shops.list?.() as unknown as unknown[];
+        const data = Array.isArray(shopsRes) ? shopsRes.map((s) => {
+          const shop = s as Record<string, unknown>;
+          return { id: shop.id as number, name: String(shop.name) };
+        }) : [];
         metaCacheRef.current.shops = { data, ts: now };
-        try { sessionStorage.setItem('retailerMetaShops', JSON.stringify(metaCacheRef.current.shops)); } catch {}
+        try { sessionStorage.setItem('retailerMetaShops', JSON.stringify(metaCacheRef.current.shops)); } catch {
+          // ignore
+        }
         setShops(data);
       }
     } catch {/* ignore */}
@@ -116,22 +127,31 @@ export default function RetailerDistributions() {
       if (useCached) {
         setRetailerProducts(metaCacheRef.current.products!.data);
       } else {
-        const prods: any = await RetailerAPI.inventory.myProducts({ page: 1, limit: 100 });
-        const data = (prods && Array.isArray(prods.products)) ? prods.products.map((p: any) => ({ id: p.id, label: p.product?.name || `#${p.id}` })) : [];
+        const prods = await RetailerAPI.inventory.myProducts({ page: 1, limit: 100 }) as unknown as Record<string, unknown>;
+        const prodsArray = (prods && Array.isArray((prods as Record<string, unknown>).products)) ? ((prods as Record<string, unknown>).products as unknown[]) : [];
+        const data = prodsArray.map((p) => {
+          const prod = p as Record<string, unknown>;
+          const prodDetail = prod.product as Record<string, unknown>;
+          return { id: prod.id as number, label: String(prodDetail?.name) || `#${prod.id}` };
+        });
         metaCacheRef.current.products = { data, ts: now };
-        try { sessionStorage.setItem('retailerMetaProducts', JSON.stringify(metaCacheRef.current.products)); } catch {}
+        try { sessionStorage.setItem('retailerMetaProducts', JSON.stringify(metaCacheRef.current.products)); } catch {
+          // ignore
+        }
         setRetailerProducts(data);
       }
     } catch {/* ignore */}
   };
 
-  useEffect(() => { if (createOpen) loadMeta(); }, [createOpen]);
+  const loadMetaRef = useRef(loadMeta);
+  useEffect(() => { loadMetaRef.current = loadMeta; });
+  useEffect(() => { if (createOpen) loadMetaRef.current(); }, [createOpen]);
 
   const fetchData = async (p = page) => {
     try {
       setLoading(true);
       setStatusMsg('Loading distributions…');
-      const baseParams: any = {
+      const baseParams: Record<string, unknown> = {
         page: p,
         limit: 20,
         retailerShopId: filters.shopId ? Number(filters.shopId) : undefined,
@@ -141,7 +161,7 @@ export default function RetailerDistributions() {
       };
       if (filters.paymentStatus) baseParams.paymentStatus = filters.paymentStatus; // tolerated via casting if backend supports; ignored otherwise
       const data = await RetailerAPI.distributions.getAll(baseParams);
-      setList((data as any) || { distributions: [] });
+      setList((data as unknown as typeof list) || { distributions: [] });
       setPage(p);
       setStatusMsg('Distributions loaded');
     } catch (e) {
@@ -156,6 +176,7 @@ export default function RetailerDistributions() {
   const fetchRef = useRef(fetchData);
   useEffect(() => { fetchRef.current = fetchData; });
   // Use shared query sync hook
+  const filterKeysRef = useRef(JSON.stringify(filters));
   useQuerySync<{ shopId?: string; deliveryStatus?: string; paymentStatus?: string; dateFrom?: string; dateTo?: string }>({
     state: filters,
     setState: (updater) => setFilters(updater(filters)),
@@ -164,15 +185,22 @@ export default function RetailerDistributions() {
   });
 
   // Fetch on filter change
-  useEffect(() => { fetchRef.current(1); }, [JSON.stringify(filters)]);
+  useEffect(() => {
+    const newKeys = JSON.stringify(filters);
+    if (newKeys !== filterKeysRef.current) {
+      filterKeysRef.current = newKeys;
+      fetchRef.current(1);
+    }
+  }, [filters]);
 
   const summary = useMemo(() => {
     if (list.summary) return list.summary;
-    const totals = list.distributions.reduce((acc, d: any) => {
+    const totals = list.distributions.reduce((acc: Record<string, number>, d: unknown) => {
+      const dist = d as Record<string, unknown>;
       acc.totalDistributions += 1;
-      acc.totalAmount += d.totalAmount || 0;
-      if (d.deliveryStatus && d.deliveryStatus !== 'DELIVERED') acc.pendingDeliveries += 1;
-      if (d.paymentStatus && d.paymentStatus !== 'PAID') acc.pendingPayments += 1;
+      acc.totalAmount += (dist.totalAmount as number) || 0;
+      if (dist.deliveryStatus && dist.deliveryStatus !== 'DELIVERED') acc.pendingDeliveries += 1;
+      if (dist.paymentStatus && dist.paymentStatus !== 'PAID') acc.pendingPayments += 1;
       return acc;
     }, { totalDistributions: 0, totalAmount: 0, pendingDeliveries: 0, pendingPayments: 0 });
     return totals;
@@ -252,14 +280,14 @@ export default function RetailerDistributions() {
                   <Input placeholder="Search product…" className="mb-2" onChange={(e) => {
                     const q = e.target.value.toLowerCase();
                     // Simple client-side label filter; retailerProducts already loaded
-                    setRetailerProducts(prev => prev.map(p => ({ ...p, hidden: q && !p.label.toLowerCase().includes(q) })) as any);
+                    setRetailerProducts(prev => prev.map(p => ({ ...p, hidden: q && !(String((p as Record<string, unknown>).label).toLowerCase().includes(q)) })));
                   }} />
                 </div>
                 {form.lines.map((ln, idx) => (
                   <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-2 p-2 border rounded-md bg-muted/30">
                     <select className="border rounded-md p-2" value={ln.retailerProductId} onChange={(e) => setForm(f => ({ ...f, lines: f.lines.map((l,i)=> i===idx? { ...l, retailerProductId: e.target.value }: l) }))}>
                       <option value="">Product</option>
-                      {retailerProducts.filter((rp:any)=> !rp.hidden).map(rp => <option key={rp.id} value={rp.id}>{rp.label}</option>)}
+                      {retailerProducts.filter((rp: unknown)=> !(rp as Record<string, unknown>).hidden).map((rp, i) => <option key={i} value={String((rp as Record<string, unknown>).id)}>{String((rp as Record<string, unknown>).label)}</option>)}
                     </select>
                     <Input type="number" placeholder="Qty" value={ln.quantity} onChange={(e) => setForm(f => ({ ...f, lines: f.lines.map((l,i)=> i===idx? { ...l, quantity: e.target.value }: l) }))} />
                     <Input type="number" placeholder="Unit Price" value={ln.unitPrice} onChange={(e) => setForm(f => ({ ...f, lines: f.lines.map((l,i)=> i===idx? { ...l, unitPrice: e.target.value }: l) }))} />
@@ -300,14 +328,16 @@ export default function RetailerDistributions() {
                     setCreateOpen(false);
                     setForm({ shopId: '', notes: '', paymentDueDate: '', lines: [{ retailerProductId: '', quantity: '', unitPrice: '' }] });
                     // Optimistic prepend to current list (basic record shape)
-                    if ((resp as any)?.distributions?.length) {
-                      setList(prev => ({ ...prev, distributions: [...(resp as any).distributions, ...prev.distributions] }));
+                    const respData = resp as unknown as Record<string, unknown>;
+                    const respDistributions = respData?.distributions as unknown[];
+                    if (Array.isArray(respDistributions) && respDistributions.length) {
+                      setList(prev => ({ ...prev, distributions: [...respDistributions as DistributionRow[], ...prev.distributions] }));
                     }
                     // Dispatch global event for other pages (shops) to adjust stats
                     window.dispatchEvent(new CustomEvent('retailer:distribution-created', { detail: { shopId: Number(form.shopId), lines } }));
                     fetchData(1);
-                  } catch (e: any) {
-                    toast.error(e?.message || 'Create failed');
+                  } catch (e: unknown) {
+                    toast.error(String((e as Record<string, unknown>)?.message) || 'Create failed');
                   } finally { setCreating(false); }
                 }}>{creating ? 'Creating…' : 'Create'}</Button>
               </div>
@@ -346,7 +376,7 @@ export default function RetailerDistributions() {
             {Object.entries(filters).filter(([,v]) => v).map(([k,v]) => (
               <div key={k} className="text-[10px] px-2 py-1 bg-muted rounded-md flex items-center gap-1">
                 <span>{k}:{v}</span>
-                <button className="text-xs" onClick={() => { setFilters(f=> { const clone = {...f}; delete (clone as any)[k]; return clone; }); fetchData(1); }}>✕</button>
+                <button className="text-xs" onClick={() => { setFilters(f=> { const clone = {...f} as Record<string, unknown>; delete clone[k]; return clone as typeof filters; }); fetchData(1); }}>✕</button>
               </div>
             ))}
           </div>
@@ -366,17 +396,23 @@ export default function RetailerDistributions() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(list?.distributions ?? []).length ? (list.distributions.map((d: any) => (
+                  {(list?.distributions ?? []).length ? (list.distributions.map((d: DistributionRow) => {
+                    const dRec = d as Record<string, unknown>;
+                    const shop = dRec.shop as Record<string, unknown>;
+                    const retailerProduct = dRec.retailerProduct as Record<string, unknown>;
+                    const product = retailerProduct?.product as Record<string, unknown>;
+                    return (
                     <tr key={d.id} className="border-t hover:bg-muted/30 cursor-pointer" onClick={() => openDetail(d.id)}>
-                      <td className="py-2 px-3">{d.shop?.name}</td>
-                      <td className="py-2 px-3">{d.retailerProduct?.product?.name}</td>
+                      <td className="py-2 px-3">{String(shop?.name || '')}</td>
+                      <td className="py-2 px-3">{String(product?.name || '')}</td>
                       <td className="py-2 px-3">{formatNumber(d.quantity || 0)}</td>
                       <td className="py-2 px-3">{formatCurrency(d.totalAmount || 0)}</td>
                       <td className="py-2 px-3"><StatusBadge status={d.deliveryStatus} /></td>
                       <td className="py-2 px-3"><StatusBadge status={d.paymentStatus} /></td>
-                      <td className="py-2 px-3 text-xs">{d.paymentDueDate ? new Date(d.paymentDueDate).toLocaleDateString(undefined, { year:'2-digit', month:'short', day:'numeric' }) : '-'}</td>
+                      <td className="py-2 px-3 text-xs">{(dRec.paymentDueDate) ? new Date(String(dRec.paymentDueDate)).toLocaleDateString(undefined, { year:'2-digit', month:'short', day:'numeric' }) : '-'}</td>
                     </tr>
-                  ))) : (
+                    );
+                  })) : (
                     <tr><td colSpan={7} className="py-4 text-center text-xs text-muted-foreground">No distributions match current filters.</td></tr>
                   )}
                 </tbody>
@@ -455,8 +491,8 @@ export default function RetailerDistributions() {
       <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
         <SheetContent side="right" className="sm:max-w-xl w-full">
           <SheetHeader>
-            <SheetTitle>Distribution #{detailDistribution?.id}</SheetTitle>
-            <SheetDescription>{detailDistribution?.shop?.name || 'Details'}</SheetDescription>
+            <SheetTitle>Distribution #{String((detailDistribution as Record<string, unknown>)?.id || '')}</SheetTitle>
+            <SheetDescription>{String(((detailDistribution as Record<string, unknown>)?.shop as Record<string, unknown>)?.name || 'Details')}</SheetDescription>
           </SheetHeader>
           <div className="px-2 pb-6 space-y-4 text-sm overflow-y-auto max-h-[80vh]">
             {detailLoading && <div className="text-muted-foreground">Loading…</div>}
@@ -465,22 +501,22 @@ export default function RetailerDistributions() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="clay p-3 rounded-lg">
                     <div className="text-[10px] uppercase text-muted-foreground">Shop</div>
-                    <div className="font-medium">{detailDistribution.shop?.name || '—'}</div>
+                    <div className="font-medium">{String(((detailDistribution as Record<string, unknown>).shop as Record<string, unknown>)?.name || '—')}</div>
                   </div>
                   <div className="clay p-3 rounded-lg">
                     <div className="text-[10px] uppercase text-muted-foreground">Delivery</div>
-                    <div><StatusBadge status={detailDistribution.deliveryStatus} /></div>
+                    <div><StatusBadge status={String((detailDistribution as Record<string, unknown>).deliveryStatus)} /></div>
                   </div>
                   <div className="clay p-3 rounded-lg">
                     <div className="text-[10px] uppercase text-muted-foreground">Total Amount</div>
-                    <div>{formatCurrency(detailDistribution.totalAmount || 0)}</div>
+                    <div>{formatCurrency(((detailDistribution as Record<string, unknown>).totalAmount as number) || 0)}</div>
                   </div>
                   <div className="clay p-3 rounded-lg">
                     <div className="text-[10px] uppercase text-muted-foreground">Payment Due</div>
-                    <div>{detailDistribution.paymentDueDate ? new Date(detailDistribution.paymentDueDate).toLocaleDateString() : '—'}</div>
+                    <div>{(detailDistribution as Record<string, unknown>).paymentDueDate ? new Date(String((detailDistribution as Record<string, unknown>).paymentDueDate)).toLocaleDateString() : '—'}</div>
                   </div>
                 </div>
-                {Array.isArray(detailDistribution.distributions || detailDistribution.lines) && (
+                {Array.isArray((detailDistribution as Record<string, unknown>).distributions || (detailDistribution as Record<string, unknown>).lines) && (
                   <div>
                     <h4 className="text-xs font-medium mb-2 text-muted-foreground uppercase tracking-wide">Line Items</h4>
                     <div className="overflow-x-auto border rounded-md">
@@ -494,23 +530,28 @@ export default function RetailerDistributions() {
                           </tr>
                         </thead>
                         <tbody>
-                          {(detailDistribution.distributions || detailDistribution.lines).map((ln: any, i: number) => (
+                          {(((detailDistribution as Record<string, unknown>).distributions as unknown[]) || ((detailDistribution as Record<string, unknown>).lines as unknown[])).map((ln: unknown, i: number) => {
+                            const line = ln as Record<string, unknown>;
+                            const retailerProduct = line?.retailerProduct as Record<string, unknown>;
+                            const product = line?.product as Record<string, unknown>;
+                            return (
                             <tr key={i} className="border-t">
-                              <td className="py-2 px-3">{ln.retailerProduct?.product?.name || ln.product?.name || `#${ln.retailerProductId}`}</td>
-                              <td className="py-2 px-3">{formatNumber(ln.quantity || 0)}</td>
-                              <td className="py-2 px-3">{formatCurrency(ln.unitPrice || ln.price || 0)}</td>
-                              <td className="py-2 px-3">{formatCurrency((ln.unitPrice || ln.price || 0) * (ln.quantity || 0))}</td>
+                              <td className="py-2 px-3">{String(((retailerProduct?.product as Record<string, unknown>)?.name || product?.name || `#${line?.retailerProductId || ''}`))}</td>
+                              <td className="py-2 px-3">{formatNumber((line?.quantity as number) || 0)}</td>
+                              <td className="py-2 px-3">{formatCurrency(((line?.unitPrice || line?.price) as number) || 0)}</td>
+                              <td className="py-2 px-3">{formatCurrency((((line?.unitPrice || line?.price) as number) || 0) * ((line?.quantity as number) || 0))}</td>
                             </tr>
-                          ))}
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
                   </div>
                 )}
-                {detailDistribution.notes && (
+                {!!(detailDistribution as Record<string, unknown>).notes && (
                   <div>
                     <h4 className="text-xs font-medium mb-1 text-muted-foreground uppercase tracking-wide">Notes</h4>
-                    <p className="text-sm whitespace-pre-wrap">{detailDistribution.notes}</p>
+                    <p className="text-sm whitespace-pre-wrap">{String((detailDistribution as Record<string, unknown>).notes)}</p>
                   </div>
                 )}
               </div>
