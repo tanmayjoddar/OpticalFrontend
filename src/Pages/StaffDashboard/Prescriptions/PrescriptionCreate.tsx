@@ -76,54 +76,52 @@ const PrescriptionCreate = () => {
       setError(null);
       setShowSuccess(false);
 
-      // Helper function to clean empty strings to empty string (not undefined)
-      const cleanValue = (value: string) => {
-        return value.trim();
-      };
-
       const payload = {
-        patientId: Number(patientId),
+        patientId: parseInt(patientId, 10),
         rightEye: {
-          type: cleanValue(rightEye.type),
-          sph: cleanValue(rightEye.sph),
-          cyl: cleanValue(rightEye.cyl),
-          axis: cleanValue(rightEye.axis),
-          add: cleanValue(rightEye.add),
-          pd: cleanValue(rightEye.pd),
-          bc: cleanValue(rightEye.bc),
-          remarks: cleanValue(rightEye.remarks),
+          type: rightEye.type || "Progressive",
+          sph: rightEye.sph.trim(),
+          cyl: rightEye.cyl.trim(),
+          axis: rightEye.axis.trim(),
+          add: rightEye.add.trim(),
+          pd: rightEye.pd.trim(),
+          bc: rightEye.bc.trim(),
+          remarks: rightEye.remarks.trim(),
         },
         leftEye: {
-          type: cleanValue(leftEye.type),
-          sph: cleanValue(leftEye.sph),
-          cyl: cleanValue(leftEye.cyl),
-          axis: cleanValue(leftEye.axis),
-          add: cleanValue(leftEye.add),
-          pd: cleanValue(leftEye.pd),
-          bc: cleanValue(leftEye.bc),
-          remarks: cleanValue(leftEye.remarks),
+          type: leftEye.type || "Progressive",
+          sph: leftEye.sph.trim(),
+          cyl: leftEye.cyl.trim(),
+          axis: leftEye.axis.trim(),
+          add: leftEye.add.trim(),
+          pd: leftEye.pd.trim(),
+          bc: leftEye.bc.trim(),
+          remarks: leftEye.remarks.trim(),
         },
-        notes: cleanValue(notes),
+        notes: notes.trim(),
       };
 
-      console.log(
-        "📤 Sending prescription payload:",
-        JSON.stringify(payload, null, 2)
-      );
+      console.log("📤 Payload:", JSON.stringify(payload, null, 2));
+
       const res = await StaffAPI.prescriptions.create(payload);
-      console.log("✅ Prescription created:", res);
+      console.log("✅ Success:", res);
+
       setResult(res);
       setShowSuccess(true);
 
-      // Auto-redirect after 2 seconds
       setTimeout(() => {
         navigate("/staff-dashboard/prescriptions");
       }, 2000);
     } catch (e) {
-      const message =
-        typeof e === "object" && e && "message" in e
-          ? String((e as { message?: unknown }).message)
-          : "Create failed";
+      console.error("❌ Error Details:", e);
+
+      let message = "Failed to create prescription";
+
+      if (typeof e === "object" && e) {
+        const error = e as Record<string, unknown>;
+        message = String(error.message || error.error || message);
+      }
+
       setError(message);
     } finally {
       setLoading(false);
