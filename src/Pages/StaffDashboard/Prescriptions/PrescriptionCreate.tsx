@@ -76,30 +76,36 @@ const PrescriptionCreate = () => {
       setError(null);
       setShowSuccess(false);
 
+      // Helper function to clean empty strings to undefined
+      const cleanValue = (value: string) => {
+        const trimmed = value.trim();
+        return trimmed ? trimmed : undefined;
+      };
+
       const payload = {
         patientId: Number(patientId),
         rightEye: {
-          type: rightEye.type.trim(),
-          sph: rightEye.sph.trim(),
-          cyl: rightEye.cyl.trim(),
-          axis: rightEye.axis.trim(),
-          add: rightEye.add.trim(),
-          pd: rightEye.pd.trim(),
-          bc: rightEye.bc.trim(),
-          remarks: rightEye.remarks.trim(),
+          type: cleanValue(rightEye.type),
+          sph: cleanValue(rightEye.sph),
+          cyl: cleanValue(rightEye.cyl),
+          axis: cleanValue(rightEye.axis),
+          add: cleanValue(rightEye.add),
+          pd: cleanValue(rightEye.pd),
+          bc: cleanValue(rightEye.bc),
+          remarks: cleanValue(rightEye.remarks),
         },
         leftEye: {
-          type: leftEye.type.trim(),
-          sph: leftEye.sph.trim(),
-          cyl: leftEye.cyl.trim(),
-          axis: leftEye.axis.trim(),
-          add: leftEye.add.trim(),
-          pd: leftEye.pd.trim(),
-          bc: leftEye.bc.trim(),
-          remarks: leftEye.remarks.trim(),
+          type: cleanValue(leftEye.type),
+          sph: cleanValue(leftEye.sph),
+          cyl: cleanValue(leftEye.cyl),
+          axis: cleanValue(leftEye.axis),
+          add: cleanValue(leftEye.add),
+          pd: cleanValue(leftEye.pd),
+          bc: cleanValue(leftEye.bc),
+          remarks: cleanValue(leftEye.remarks),
         },
-        notes: notes.trim(),
-      }; 
+        notes: cleanValue(notes),
+      };
 
       const res = await StaffAPI.prescriptions.create(payload);
       setResult(res);
@@ -119,7 +125,6 @@ const PrescriptionCreate = () => {
       setLoading(false);
     }
   };
-
   const reset = () => {
     setPatientId("");
     setRightEye({
